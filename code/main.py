@@ -1,3 +1,13 @@
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from copy import copy
+import pandas as pd
+import scipy
+from scipy import stats
+from sklearn.preprocessing import StandardScaler
+from collections import defaultdict
+
 def magnetization(config):
     return np.mean(config)
 
@@ -265,17 +275,6 @@ def testing(energy, T, n_samples, counts):
     return binomial_average, binomial_std
 
 if __name__ == '__main__':
-
-    import numpy as np
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    from copy import copy
-    import pandas as pd
-    import scipy
-    from scipy import stats
-    from sklearn.preprocessing import StandardScaler
-    from collections import defaultdict
-
     random_seed = 1
     np.random.seed(random_seed)
     chain_size = 3
@@ -414,8 +413,3 @@ if __name__ == '__main__':
     axes[1].set_title("Magnetization, α(σ) = α(-σ) = " + string_action_rate)
     axes[1].legend(['MonteCarlo', 'Dynamic', 'Normal'], loc="upper right")
     plt.show()
-
-
-
-
-
