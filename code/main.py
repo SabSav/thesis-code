@@ -285,22 +285,17 @@ if __name__ == '__main__':
     n_samples = 1000
     n_steps = 1000
 
-    print("### MONTE CARLO SIMULATION ###")
-    print("Evaluate burn-in")
+    ### MONTE CARLO SIMULATION ###
     fig_burnIn = burn_in_evaluation(time_step, chain_size, 1/T, J, h)
     t_burn_in = 10 #int(input("Enter t_burn_in:"))
 
-    print("Evaluate correlation_time:")
     fig_correlation = set_correlation_time(time_step, t_burn_in, chain_size, 1 / T, J, h)
     t_correlation = 1 #int(input("Enter t_correlation:"))
 
-    print("Evaluating energy and magnetization")
-
     H_MMC, M_MMC = metropolis_ising(chain_size, J, h, 1/T, t_burn_in, t_correlation, n_samples)
-    print(max(H_MMC), min(H_MMC))
-    print(max(M_MMC), min(M_MMC))
 
-    print("### DYNAMIC SIMULATION ###")
+    ### MONTE CARLO SIMULATION ###
+
     # we define action rate plus and minus because the action rates could depend on the fact that the spin is +/-1
     action_rates_plus = []
     action_rates_minus = []
@@ -315,8 +310,6 @@ if __name__ == '__main__':
     initial_config = 2 * np.random.randint(2, size=chain_size) - 1
     H, M = dynamic_evaluation(chain_size=chain_size, T=T, J=J, h=h, n_steps=n_steps, config=initial_config,
                               action_rates_plus=action_rates_plus, action_rates_minus=action_rates_minus)
-    print(max(H), min(H))
-    print(max(M), min(M))
 
     m_correlation_plot = acrl(m=M, time_evolution=n_steps, temperature=T)
 
@@ -347,27 +340,30 @@ if __name__ == '__main__':
     axes[0].set_title("Energy")
     axes[0].legend(['MonteCarlo', 'Dynamic'], loc="upper right")
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    axes[0].text(0.05, 0.95, textstr, transform=axes[0].transAxes, fontsize=8,
+    axes[0].text(0.65, 0.8, textstr, transform=axes[0].transAxes, fontsize=8,
                  verticalalignment='top', bbox=props)
     axes[1].set_title("Magnetization")
-    axes[1].legend(['MonteCarlo', 'Dynamic'], loc="upper right")
-    axes[1].text(0.05, 0.95, textstr, transform=axes[1].transAxes, fontsize=8,
+    axes[1].legend(['MonteCarlo', 'Dynamic'], loc="upper left")
+    axes[1].text(0.05, 0.8, textstr, transform=axes[1].transAxes, fontsize=8,
                  verticalalignment='top', bbox=props)
 
-    print("Chi2sq test:")
     counts_HMMC, counts_H, bins_bound = centered_histogram(df_MMC["H_MMC"], df_dynamic["H"], J, chain_size,
                                                            energy_flag=True)
-    print(bins_bound)
-    print(counts_HMMC)
-    print(counts_H)
     figH_hist, axes = plt.subplots(1, 2)
     axes[0].hist(bins_bound[:-1], bins_bound, weights=counts_HMMC, axes=axes[0])
     axes[0].set_title("MonteCarlo")
     axes[1].hist(bins_bound[:-1], bins_bound, weights=counts_H, axes=axes[1])
     axes[1].set_title("Dynamic")
     plt.show()
-    p_value_H = chi2test(df_MMC["H_MMC"], df_dynamic["H"], counts_HMMC, counts_H)
-    print("Energy pvalue:", p_value_H)
+
+    binom_avg_MMC, binom_std_MMC = testing(df_MMC["H_MMC"], T, n_samples, counts_HMMC)
+    binom_avg, binom_std = testing(df_dynamic["H"], T, n_samples, counts_H)
+    bins_bound = np.delete(bins_bound, 1)
+    plt.errorbar(bins_bound, counts_HMMC, yerr=binom_std_MMC, marker='.', linestyle='none', color='m')
+    plt.errorbar(bins_bound, counts_H, yerr=binom_std, marker='.', linestyle='none', color='b')
+    plt.legend(['MonteCarlo', 'Dynamic'], loc="upper right")
+    plt.show()
+    #p_value_H = chi2test(df_MMC["H_MMC"], df_dynamic["H"], counts_HMMC, counts_H)
     figM_hist, axes = plt.subplots(1, 2)
     counts_MMMC, counts_M, bins_bound = centered_histogram(df_MMC["M_MMC"], df_dynamic["M"], J, chain_size,
                                                            energy_flag=False)
@@ -376,25 +372,14 @@ if __name__ == '__main__':
     axes[1].hist(bins_bound[:-1], bins_bound, weights=counts_M, axes=axes[1])
     axes[1].set_title("Dynamic")
     plt.show()
-    p_value_M = chi2test(df_MMC["M_MMC"], df_dynamic["M"], counts_MMMC, counts_M)
-    print("Magnetization pvalue:", p_value_M)
+    #p_value_M = chi2test(df_MMC["M_MMC"], df_dynamic["M"], counts_MMMC, counts_M) --> i do it on testing
 
-    #They come from the same distribution
 
-    #testing algorithms:
 
-    binom_avg_MMC, binom_std_MMC = testing(df_MMC["H_MMC"], T, n_samples, counts_HMMC)
-    print(binom_avg_MMC, binom_std_MMC, counts_HMMC)
-    binom_avg, binom_std = testing(df_dynamic["H"], T, n_samples, counts_H)
-    print(binom_avg, binom_std, counts_H)
 
-    print("MonteCarlo KS test:")
+    #KS test
     MMC_statistic, MMC_pvalue, df_MMC_scaled = KS_test(df_MMC)
-    print("Energy p_value = " + str(MMC_pvalue[0]) + " Magnetization p_value = " + str(MMC_pvalue[1]))
-
-    print("Dynamic KS test:")
     dynamic_statistic, dynamic_pvalue, df_dynamic_scaled = KS_test(df_dynamic)
-    print("Energy p_value = " + str(dynamic_pvalue[0]) + " Magnetization p_value = " + str(dynamic_pvalue[1]))
 
     fig_Ktest, axes = plt.subplots(1, 2)
     h1_cdf = sns.ecdfplot(data=df_MMC_scaled["H_MMC"], ax=axes[0])
@@ -411,5 +396,5 @@ if __name__ == '__main__':
     axes[0].set_title("Energy, α(σ) = α(-σ) = " + string_action_rate)
     axes[0].legend(['MonteCarlo', 'Dynamic', 'Normal'], loc="upper right")
     axes[1].set_title("Magnetization, α(σ) = α(-σ) = " + string_action_rate)
-    axes[1].legend(['MonteCarlo', 'Dynamic', 'Normal'], loc="upper right")
+    axes[1].legend(['MonteCarlo', 'Dynamic', 'Normal'], loc="upper left")
     plt.show()
