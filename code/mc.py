@@ -23,7 +23,7 @@ def main(args):
     energy = np.empty(args.length)
     magnetization = np.empty_like(energy)
 
-    # Delete the first burn_in samples so that the stationary distribution is reached
+    # Skip the first burn_in samples so that the stationary distribution is reached
     for _ in tqdm(range(args.burn_in), desc="Burn-in"):
         ising.metropolis_pass(chain)
 
@@ -31,10 +31,6 @@ def main(args):
     for i in tqdm(range(args.length), desc="Simulation"):
         ising.metropolis_pass(chain)
         energy[i] = chain.energy()
-        # H= 0
-        # for i in range(len(state)):
-        #     H += -state[i]*(h + (J/2)*(state[(i + 1) % chain_size] + state[(i - 1) % chain_size]))
-        # current_H.append(H)
         magnetization[i] = np.mean(chain.spins)
 
     bundle = chain.export_dict()
