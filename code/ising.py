@@ -1,5 +1,4 @@
 """Simulation tools for Ising model"""
-
 import numpy as np
 
 class Chain:
@@ -46,12 +45,35 @@ class Chain:
 
     def deltaE(self, i):
         """Return energy cost of flipping a given spin"""
-        return 2 * self.field * self.spins[i] + self.coupling * self.spins[i] * (
+        return 2 * self.field * self.spins[i] + 2 * self.coupling * self.spins[i] * (
             self.spins[i - 1] + self.spins[(i + 1) % len(self.spins)]
         )
+    def energy(self):
+        """Return the chain energy"""
+        size = len(self.spins)
+        j_2 = self.coupling / 2
+        engy = 0.0
+        for i in range(size): engy -= self.spins[i] * (
+            self.field + j_2 * (
+                self.spins[i - 1] + self.spins[(i + 1) % size]
+            )
+        )
+        return engy
+
+    def export_dict(self):
+        """Export dictionary containing system's parameters"""
+        return {
+            "coupling": self.coupling,
+            "temperature": self.temperature, "field": self.field,
+            "spins": self.spins.tolist()
+        }
 
 class DynamicChain(Chain):
-    """An extension of the Ising chain for stochastic simulations"""
+    """An extension of the Ising chain for stochastic simulations
+
+    Attributes:
+        _buffer (np.ndarray): Buffer for simulation data
+    """
 
     def __init__(self, coupling=1, temperature=1.0, field=0., **kwargs):
         """Overriden constructor with additional arguments
@@ -74,9 +96,21 @@ class DynamicChain(Chain):
         )
         assert self.action_rates.shape == (len(self.spins), 2)
 
+        self._buffer = np.empty_like(self.spins)
+
     def action_rate(self, i, value):
         """Return action rate for a given value of an `i`th spin"""
         return self.action_rates[i, (value + 1) // 2]
+
+    def _prepare_buffer(self):
+        """Return buffer after ensuring that it has the required size"""
+        if self._buffer.shape != self.spins.shape:
+            self._buffer = np.empty_like(self.spins)
+        return self._buffer
+
+    def advance(self):
+        """Apply one simulation step of the algorithm I"""
+        pass
 
 def metropolis_pass(chain: Chain):
     """Apply Metropolis step to each spin of the chain in random order
@@ -86,7 +120,7 @@ def metropolis_pass(chain: Chain):
     """
 
     # Iterate over spin indices taken in the random order
-    for spin_to_change in np.random.permutation(np.arange(len(chain.config))):
+    for spin_to_change in np.random.permutation(np.arange(len(chain.spins))):
         dE = chain.deltaE(spin_to_change)
 
         # Metropolis condition min(1, exp(...)) always holds for dE < 0
