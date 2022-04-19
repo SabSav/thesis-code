@@ -151,6 +151,7 @@ def dynamic_evaluation(chain_size, T, J, h, n_steps, config, action_rates_plus, 
     for t in range(n_steps):
         # make the flip of the spin follow the random indices:
         random_order_indices = np.random.permutation(np.arange(chain_size))
+        buffer = np.full_like(config, 1)
         for spin_to_change in random_order_indices:
             sigma_i = config[spin_to_change]
             sigma_left = config[(spin_to_change - 1) % chain_size]
@@ -167,8 +168,8 @@ def dynamic_evaluation(chain_size, T, J, h, n_steps, config, action_rates_plus, 
                 prob_change = action_rates_plus[spin_to_change] * weight/(1 + weight)
 
             rank = np.random.random()
-            if prob_change > rank:
-                config[spin_to_change] *= -1
+            if prob_change > rank: buffer[spin_to_change] = -1
+        config *= buffer
         #I consider the configuration at each pass and not anytime we change one spin to avoid correlation
         m.append(np.mean(config))
         H = 0

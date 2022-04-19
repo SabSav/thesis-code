@@ -5,7 +5,7 @@ Quiet@Remove@"`*";
 Row@{"File: ",
   files = FileNameJoin[{
     NotebookDirectory[], "data", # <> ".json"
-  }]& /@ {"mc"}
+  }]& /@ {"mc.N3T1"}
 }
 
 tallies = Tally[
@@ -45,8 +45,10 @@ dashed[clr_] := Directive[clr, Dashing[{0.04, 0.02}], Thickness@0.008]
 
 BarChart[bars,
 	BaseStyle->baseStyle, FrameStyle->frameStyle,
+	ChartLabels->{{Subscript[E,0], Subscript[E,0] + \[CapitalDelta]E}, None},
 	ImageSize->Large, Frame->True
 ]
+
 
 
 

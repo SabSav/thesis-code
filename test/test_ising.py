@@ -8,7 +8,7 @@ def test_Chain():
     assert len(Chain(size=5).spins) == 5
     raises(TypeError, Chain, uknown_keyword=True)
 
-    # For 3 spins we have just two energy levels which differ by 3 J
+    # For 3 spins we have just two energy levels which differ by 4s J
     chain = Chain(coupling=3, spins = [1, 1, 1]);
     assert chain.deltaE(0) == 12
     assert chain.deltaE(1) == 12

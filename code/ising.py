@@ -110,6 +110,7 @@ class DynamicChain(Chain):
 
     def advance(self):
         """Apply one simulation step of the algorithm I"""
+        buffer = self._prepare_buffer()
         pass
 
 def metropolis_pass(chain: Chain):
