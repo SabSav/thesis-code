@@ -133,9 +133,16 @@ class DynamicChain(Chain):
     def advance(self, index_criterion):
         """Apply one simulation step of the algorithm I"""
         buffer = self._prepare_buffer()
-        buffer = np.full_like(buffer, 1)
+        buffer = np.full_like(buffer, 1) # RB: this kills the purpose of `_prepare_buffer()`
+        # RB: Instead you should use np.fill(buffer, 1).
+
+        # RB: Permuation is not necessary here, because we do not change anything
+        # RB: until the pass is complete. `np.arange(...)` is enough.
         for spin_to_change in np.random.permutation(np.arange(len(self.spins))):
             dE = self.deltaE(spin_to_change)
+
+            # RB: That is lame hard coding =) You have `action_rates` keyword argument (kwarg),
+            # RB: which you can use to specify you action rates. Do not hard-code your action rates!
             if index_criterion:
                 if spin_to_change % 2 != 0:
                     action_rates_ratio = self.action_rate(spin_to_change, 1) / self.action_rate(spin_to_change, -1)
@@ -323,6 +330,7 @@ def theoretical_quantities(chain: Chain, n_samples):
         theory_m.append(np.mean(chain.spins))
         theory_engy.append(chain.energy())
 
+    # RB: this can be majorly simplified
     weights_config = []
     theory_engy = np.sort(theory_engy)
     for value in theory_engy:
@@ -393,6 +401,7 @@ def gof(f_obs, f_exp):
     for i in range(len(f_exp)):
         t_statistics += pow(f_obs[i] - f_exp[i], 2) / f_obs[i]
 
+    # RB: remind me to discuss the degrees of freedom
     p_value = 1 - scipy.stats.chi2.cdf(x=t_statistics, df=len(f_exp) - 1)
     return p_value
 
@@ -402,6 +411,9 @@ def two_sample_chi2test(dict_a, dict_b, n_samples_a, n_samples_b):
     k2 = pow(n_samples_a / n_samples_b, 1 / 2)
     t_statistic = 0
     if len(dict_a) != len(dict_b):
+        # RB: This is not enough. You may have the same length of your dictionaries,
+        # RB: but the keys are not all equal, e.g. {'a': 1, 'b': 2}, {'a': 1, 'c': 3}.
+        # RB: We should discuss the whole implementation—remind me please
         for i in range(len(list(dict_b.keys()))):
             if list(dict_b.keys())[i] not in list(dict_a.keys()):
                 items = list(dict_a.items())
@@ -521,7 +533,7 @@ if __name__ == '__main__':
 
         '''
         goodness of fit test (one-sample vs theory):
-        test brings out problems for very low or very high T because in these case might happen that the 
+        test brings out problems for very low or very high T because in these case might happen that the
         theory_engy_counts there exists a cell with almost 0 counts in the t-statistic so we're going to divide per zero
         '''
         metropolis_pvalue = gof(f_obs=list(metropolis_engy_counts.values()), f_exp=theory_engy_counts)
