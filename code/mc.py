@@ -70,3 +70,21 @@ if __name__== '__main__':
     )
 
     main(parser.parse_args())
+
+
+def metropolis_pass(chain: Chain):
+    """Apply Metropolis step to each spin of the chain in random order
+
+    Returns
+        Chain: Updated chain
+    """
+
+    # Iterate over spin indices taken in the random order
+    for spin_to_change in np.random.permutation(np.arange(len(chain.spins))):
+        dE = chain.deltaE(spin_to_change)
+
+        # Metropolis condition min(1, exp(...)) always holds for dE < 0
+        if np.random.random() < np.exp(- dE / chain.temperature):
+            chain.spins[spin_to_change] *= -1
+
+    return chain

@@ -1,4 +1,5 @@
 import numpy as np
+import pandas
 import seaborn as sns
 import matplotlib.pyplot as plt
 from copy import copy
@@ -7,12 +8,13 @@ import scipy
 from scipy import stats
 from sklearn.preprocessing import StandardScaler
 from collections import defaultdict
+import itertools
 
 def magnetization(config):
     return np.mean(config)
 
 def deltaE(h, J, sigma_i, sigma_left, sigma_right):
-    dE = 2*h*sigma_i + J*sigma_i*(sigma_left + sigma_right)
+    dE = 2*sigma_i*(h + J*(sigma_left + sigma_right))
     return dE
 
 def metropolis_pass(J, h, beta, config):
@@ -168,7 +170,8 @@ def dynamic_evaluation(chain_size, T, J, h, n_steps, config, action_rates_plus, 
                 prob_change = action_rates_plus[spin_to_change] * weight/(1 + weight)
 
             rank = np.random.random()
-            if prob_change > rank: buffer[spin_to_change] = -1
+            if prob_change > rank:
+                buffer[spin_to_change] = -1
         config *= buffer
         #I consider the configuration at each pass and not anytime we change one spin to avoid correlation
         m.append(np.mean(config))
@@ -202,6 +205,7 @@ def acrl(m, time_evolution, temperature):
     plt.show()
     return fig
 
+"""
 def KS_test(df):
     statistic = []
     pvalue = []
@@ -219,14 +223,9 @@ def centered_histogram(x,y,J, chain_size, energy_flag):
         #rescaling data
         x = [i - min(x) for i in x]
         y = [i - min(y) for i in y]
-        if chain_size % 2 != 0:
-            bin_center = np.arange(J, max(max(x), max(y)), 2*J)
-            bin_center -= J
-            bin_bound = np.append(bin_center, bin_center[-1] + 2*J)
-        else:
-            bin_center = np.arange(J, max(max(x), max(y)), chain_size-1)
-            bin_center -= J
-            bin_bound = np.append(bin_center, bin_center[-1] + 2 * J)
+        bin_center = np.arange(2*J, max(max(x), max(y)), 4*J)
+        bin_center -= 2*J
+        bin_bound = np.append(bin_center, bin_center[-1] + 4*J)
     else:
         bin_center = np.arange(-1, +1, 2/chain_size)
         bin_bound = np.append(bin_center, bin_center[-1]+2/chain_size)
@@ -236,44 +235,107 @@ def centered_histogram(x,y,J, chain_size, energy_flag):
 
     return counts_x, counts_y, bin_bound
 
-def chi2test(x, y, counts_x, counts_y):
+"""
+def count_variables(var, energy_flag):
+    if energy_flag == True:
+        min_value = min(var)
+        var = [i - min_value for i in var]
+    var = np.sort(var)
+    keys = [str(value) for value in var]
+    var_count = defaultdict(int)
+    for k in zip(keys):
+        var_count[k] += 1
+    
+    return var_count
 
-    k1 = pow(len(y)/len(x), 1/2)
-    k2 = pow(len(x)/len(y), 1/2)
-    t_statistic = 0
-    n_bins = len(counts_x)
-    df = n_bins - 1
-    for bin in range(n_bins):
-        if counts_x[bin] == 0 and counts_y[bin] == 0:
-            df -= 1
-        else:
-            t_statistic += pow(k1*counts_x[bin] - k2*counts_y[bin], 2)/(counts_x[bin] + counts_y[bin])
-    p_value = scipy.stats.chi2.cdf(x=t_statistic, df=df)
-    return p_value
 
-def testing(energy, T, n_samples, counts):
+def theory_en_m(h, J, T, chain_size, n_samples):
 
-    energy = energy - min(energy)
+    config = list(itertools.product([1, -1], repeat=chain_size))
+    Z = 2 * np.exp(-1 / T * (-3 * J)) + 6 * np.exp(-1 / T * J)
+    theory_H_counts = []
+    theory_H_counts.append(round(n_samples * 2 * np.exp(-1 / T * (-3 * J)) / Z))
+    theory_H_counts.append(round(n_samples * 6 * np.exp(-1 / T * J) / Z))
+    theory_M = []
+    theory_H = []
+
+    for conf in config:
+        theory_M.append(magnetization(conf))
+        H = 0
+        for i in range(len(conf)):
+            H += -conf[i] * (h + (J / 2) * (conf[(i + 1) % chain_size] + conf[(i - 1) % chain_size]))
+        theory_H.append(H)
+
+    return theory_H, theory_M, theory_H_counts
+
+def theory_binomial(energy, T, n_samples):
+
+    """
+    min_value = min(energy)
+    energy = [i - min_value for i in energy]
     weights_config = []
+    energy = np.sort(energy)
     for value in energy:
         weights_config.append(np.exp(-(1/T)*value))
     Z = sum(weights_config)
     config_prob = [weight/Z for weight in weights_config]
-    energy = np.sort(energy)
     keys = [str(value) for value in energy]
-    values = config_prob
-    energy_prob = defaultdict(int)
-    for k, n in zip(keys, values):
+    energy_prob = defaultdict(int) #probability of a precise value of energy
+    for k, n in zip(keys, config_prob):
         energy_prob[k] += n
-
+    """
+    Z = 2 * np.exp(-1 / T * (-3 * J)) + 6 * np.exp(-1 / T * J)
+    energy_prob = []
+    energy_prob.append(2 * np.exp(-1 / T * (-3 * J)) / Z)
+    energy_prob.append(6 * np.exp(-1 / T * J) / Z)
     binomial_average = []
     binomial_std = []
-
-    for i in range(len(counts)):
-        binomial_average.append(scipy.stats.binom.mean(n=n_samples, p=list(energy_prob.values())[i]))
-        binomial_std.append(scipy.stats.binom.std(n=n_samples, p=list(energy_prob.values())[i]))
+    for i in range(len(energy_prob)):
+        binomial_average.append(scipy.stats.binom.mean(n=n_samples, p=energy_prob[i]))
+        binomial_std.append(scipy.stats.binom.std(n=n_samples, p=energy_prob[i]))
 
     return binomial_average, binomial_std
+
+def std_algorithms(counts, theory_avg, theory_std):
+    multiplicity = []
+    std = []
+    for i in range(len(theory_avg)):
+        factor = round(abs(counts[i] - theory_avg[i])/theory_std[i])
+        multiplicity.append(factor)
+        if factor > 1:
+            std.append(factor*theory_std[i])
+        else:
+            std.append(theory_std[i])
+
+    return multiplicity, std
+
+def chi2test(a, b, energy_flag):
+
+    k1 = pow(len(b)/len(a), 1/2)
+    k2 = pow(len(b)/len(a), 1/2)
+    counts_a = count_variables(a, energy_flag)
+    value_a = list(counts_a.values())
+    counts_b = count_variables(b, energy_flag)
+    value_b = list(counts_b.values())
+    t_statistic = 0
+    if len(value_b) > len(value_a):
+        for i in range(len(list(counts_b.keys()))):
+            if list(counts_b.keys())[i] not in list(counts_a.keys()):
+                value_a.insert(i, 0)
+    elif len(value_a) > len(value_b):
+        for i in range(len(list(counts_a.keys()))):
+            if list(counts_a.keys())[i] not in list(counts_b.keys()):
+                value_b.insert(i, 0)
+
+    n_bins = len(value_a)
+    df = n_bins - 1
+    for bin in range(n_bins):
+        if value_a[bin] == 0 and value_b[bin] == 0:
+            df -= 1
+        else:
+            t_statistic += pow(k1*value_a[bin] - k2*value_b[bin], 2)/(value_a[bin] + value_b[bin])
+    p_value = scipy.stats.chi2.cdf(x=t_statistic, df=df)
+    return p_value
 
 if __name__ == '__main__':
     random_seed = 1
@@ -330,7 +392,7 @@ if __name__ == '__main__':
     m2.set(xlabel=None)
 
     textstr = '\n'.join((
-        r'$\alpha_i(\sigma_i) = \alpha_i(-\sigma_i) =$' + string_action_rate,
+        r'$[\alpha(\sigma_i)\quad\alpha(-\sigma_i] =$' + string_action_rate,
         r'Number MMC samples=%.0f' % (n_samples,),
         r'Number Dynamic step=%.0f' % (n_steps,),
         r'Length_chain=%.0f' % (chain_size,),
@@ -339,15 +401,48 @@ if __name__ == '__main__':
         r'T=%.1f' % (T,),))
 
     axes[0].set_title("Energy")
-    axes[0].legend(['MonteCarlo', 'Dynamic'], loc="upper right")
+    axes[0].legend(['MonteCarlo', 'Dynamic'], loc="upper left")
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    axes[0].text(0.65, 0.8, textstr, transform=axes[0].transAxes, fontsize=8,
+    axes[0].text(0.05, 0.8, textstr, transform=axes[0].transAxes, fontsize=8,
                  verticalalignment='top', bbox=props)
     axes[1].set_title("Magnetization")
-    axes[1].legend(['MonteCarlo', 'Dynamic'], loc="upper left")
+    axes[1].legend(['MonteCarlo', 'Dynamic'], loc="upper right")
     axes[1].text(0.05, 0.8, textstr, transform=axes[1].transAxes, fontsize=8,
                  verticalalignment='top', bbox=props)
 
+    theory_H, theory_M, theory_H_counts = theory_en_m(h, J, T, chain_size, n_samples)
+    counts_HMMC = count_variables(H_MMC, energy_flag=True)
+    counts_H = count_variables(H, energy_flag=True)
+    counts_MMMC = count_variables(M_MMC, energy_flag=False)
+    counts_M = count_variables(M, energy_flag=False)
+
+    theory_avg, theory_std = theory_binomial(theory_H, T, n_samples)
+    multiplicity_HMMC, std_MMC = std_algorithms(list(counts_HMMC.values()), theory_avg, theory_std)
+    multiplicity_HAlg1, std_Alg1 = std_algorithms(list(counts_H.values()), theory_avg, theory_std)
+
+    fig, ax = plt.subplots()
+    labels = counts_HMMC.keys()
+    x = np.arange(len(labels))  # the label locations
+    width = 0.25  # the width of the bars
+    rects1 = ax.bar(x, counts_HMMC.values(), width, yerr=std_MMC, align='center',
+                    label='MonteCarlo', color='b')
+    rects2 = ax.bar(x + width, counts_H.values(), width, yerr=std_Alg1, align='center', label='Dynamic',
+                    color='m')
+    rects3 = ax.bar(x + width * 2, theory_H_counts, width, yerr=theory_std, align='center', label='Theory',
+                    color='g')
+    ax.set_title('Bar Chart')
+    ax.set_ylabel('Counts per energy level')
+    ax.set_xlabel('Energy level')
+    ax.set_xticks(x + width, ['0', '4'])
+    ax.legend()
+    ax.bar_label(rects1, padding=3)
+    ax.bar_label(rects2, padding=3)
+    ax.bar_label(rects3, padding=3)
+    fig.tight_layout()
+    plt.show()
+
+    pvalue_MMMC = chi2test(M_MMC, theory_M, energy_flag=False)
+    """
     counts_HMMC, counts_H, bins_bound = centered_histogram(df_MMC["H_MMC"], df_dynamic["H"], J, chain_size,
                                                            energy_flag=True)
     figH_hist, axes = plt.subplots(1, 2)
@@ -356,15 +451,7 @@ if __name__ == '__main__':
     axes[1].hist(bins_bound[:-1], bins_bound, weights=counts_H, axes=axes[1])
     axes[1].set_title("Dynamic")
     plt.show()
-
-    binom_avg_MMC, binom_std_MMC = testing(df_MMC["H_MMC"], T, n_samples, counts_HMMC)
-    binom_avg, binom_std = testing(df_dynamic["H"], T, n_samples, counts_H)
-    bins_bound = np.delete(bins_bound, 1)
-    plt.errorbar(bins_bound, counts_HMMC, yerr=binom_std_MMC, marker='.', linestyle='none', color='m')
-    plt.errorbar(bins_bound, counts_H, yerr=binom_std, marker='.', linestyle='none', color='b')
-    plt.legend(['MonteCarlo', 'Dynamic'], loc="upper right")
-    plt.show()
-    #p_value_H = chi2test(df_MMC["H_MMC"], df_dynamic["H"], counts_HMMC, counts_H)
+  
     figM_hist, axes = plt.subplots(1, 2)
     counts_MMMC, counts_M, bins_bound = centered_histogram(df_MMC["M_MMC"], df_dynamic["M"], J, chain_size,
                                                            energy_flag=False)
@@ -373,9 +460,9 @@ if __name__ == '__main__':
     axes[1].hist(bins_bound[:-1], bins_bound, weights=counts_M, axes=axes[1])
     axes[1].set_title("Dynamic")
     plt.show()
-    #p_value_M = chi2test(df_MMC["M_MMC"], df_dynamic["M"], counts_MMMC, counts_M) --> i do it on testing
 
-
+    binom_avg_MMC, binom_std_MMC = testing(df_MMC["H_MMC"], T, n_samples, counts_HMMC)
+    binom_avg, binom_std = testing(df_dynamic["H"], T, n_samples, counts_H)
 
 
     #KS test
@@ -399,3 +486,4 @@ if __name__ == '__main__':
     axes[1].set_title("Magnetization, α(σ) = α(-σ) = " + string_action_rate)
     axes[1].legend(['MonteCarlo', 'Dynamic', 'Normal'], loc="upper left")
     plt.show()
+    """

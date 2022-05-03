@@ -1,15 +1,17 @@
 """Test suit for `ising` module"""
 from pytest import *
 from ising import *
+from ising.code.ising import Chain, DynamicChain
+
 
 def test_Chain():
     """Test basic functionality of `ising.Chain`"""
-    assert len(Chain(spins = [1, -1, 1, 1]).spins) == 4
+    assert len(Chain(spins=[1, -1, 1, 1]).spins) == 4
     assert len(Chain(size=5).spins) == 5
     raises(TypeError, Chain, uknown_keyword=True)
 
-    # For 3 spins we have just two energy levels which differ by 4s J
-    chain = Chain(coupling=3, spins = [1, 1, 1]);
+    # For 3 spins we have just two energy levels which differ by 4J
+    chain = Chain(coupling=3, spins=[1, 1, 1])
     assert chain.deltaE(0) == 12
     assert chain.deltaE(1) == 12
     assert chain.deltaE(2) == 12
