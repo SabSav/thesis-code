@@ -401,7 +401,6 @@ def gof(f_obs, f_exp):
     for i in range(len(f_exp)):
         t_statistics += pow(f_obs[i] - f_exp[i], 2) / f_obs[i]
 
-    # RB: remind me to discuss the degrees of freedom
     p_value = 1 - scipy.stats.chi2.cdf(x=t_statistics, df=len(f_exp) - 1)
     return p_value
 
@@ -410,6 +409,12 @@ def two_sample_chi2test(dict_a, dict_b, n_samples_a, n_samples_b):
     k1 = pow(n_samples_b / n_samples_a, 1 / 2)
     k2 = pow(n_samples_a / n_samples_b, 1 / 2)
     t_statistic = 0
+
+    # all_keys join(dict_a.keys(), dict_b.keys()).unique()
+    # for k in all_keys:
+    #       in dica_a? ...
+    #
+
     if len(dict_a) != len(dict_b):
         # RB: This is not enough. You may have the same length of your dictionaries,
         # RB: but the keys are not all equal, e.g. {'a': 1, 'b': 2}, {'a': 1, 'c': 3}.

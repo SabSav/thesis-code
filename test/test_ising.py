@@ -1,8 +1,6 @@
 """Test suit for `ising` module"""
 from pytest import *
 from ising import *
-from ising.code.ising import Chain, DynamicChain
-
 
 def test_Chain():
     """Test basic functionality of `ising.Chain`"""

@@ -18,31 +18,28 @@ def main(args):
         args: Parsed command-line arguments
     """
 
-    chain = ising.Chain(temperature=args.temperature, size=args.size)
+    chain = ising.Metropolis(temperature=args.temperature, size=args.size)
     np.random.seed(args.seed)
-    energy = np.empty(args.length)
+    energy = np.empty(args.length // args.frame_step)
     magnetization = np.empty_like(energy)
 
     # Skip the first burn_in samples so that the stationary distribution is reached
     for _ in tqdm(range(args.burn_in), desc="Burn-in"):
-        ising.metropolis_pass(chain)
+        chain.metropolis_pass()
 
     # Collect samples
     for i in tqdm(range(args.length), desc="Simulation"):
-        ising.metropolis_pass(chain)
-        energy[i] = chain.energy()
-        magnetization[i] = np.mean(chain.spins)
+        chain.metropolis_pass()
+        if i % args.frame_step == 0:
+            index = i // args.frame_step
+            energy[index] = chain.energy()
+            magnetization[index] = np.mean(chain.spins)
 
     bundle = chain.export_dict()
     bundle['energy_sample'] = energy.tolist()
     bundle['magnetization_sample'] = magnetization.tolist()
     with open(args.output, 'w') as file: json.dump(bundle, file)
     print(f"Simulations saved to {args.output}")
-
-    # import json
-    # with open(path, 'r+') as file: bundle = json.load(file)
-    # print("J is:", bundle["coupling"])
-
 
 ### Execute main script
 if __name__== '__main__':
@@ -68,23 +65,9 @@ if __name__== '__main__':
         '-S', dest='seed', type=int, default=0,
         help="Seed for the random number generator"
     )
+    parser.add_argument(
+        '-f', dest='frame_step', type=int, default=1,
+        help="Frame step as a number of time steps"
+    )
 
     main(parser.parse_args())
-
-
-def metropolis_pass(chain: Chain):
-    """Apply Metropolis step to each spin of the chain in random order
-
-    Returns
-        Chain: Updated chain
-    """
-
-    # Iterate over spin indices taken in the random order
-    for spin_to_change in np.random.permutation(np.arange(len(chain.spins))):
-        dE = chain.deltaE(spin_to_change)
-
-        # Metropolis condition min(1, exp(...)) always holds for dE < 0
-        if np.random.random() < np.exp(- dE / chain.temperature):
-            chain.spins[spin_to_change] *= -1
-
-    return chain
