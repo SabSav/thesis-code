@@ -1,6 +1,6 @@
-"""Monte Carlo simulation of a one-dimensional Ising model
+"""Algorithm 1 simulation of a one-dimensional Ising model
 
-This script performs a Metropolis sampling of an Ising chain and outputs parameters
+This script performs the dynamic simulation of an Ising chain and outputs parameters
 of the simulation together with a sample of energy and average magnetization into
 a given file in the JSON format.
 
@@ -19,18 +19,15 @@ def main(args):
         args: Parsed command-line arguments
     """
 
-    chain = ising.Metropolis(size=args.size, temperature=args.temperature, field=args.field, coupling=args.coupling)
+    chain = ising.DynamicChain(size=args.size, temperature=args.temperature, coupling=args.coupling,
+                               field=args.field, action_rates=args.action_rates)
     np.random.seed(args.seed)
     energy = np.empty(args.length // args.frame_step)
     magnetization = np.empty_like(energy)
 
-    # Skip the first burn_in samples so that the stationary distribution is reached
-    for _ in tqdm(range(args.burn_in), desc="Burn-in"):
-        chain.metropolis_pass()
-
     # Collect samples
     for i in tqdm(range(args.length), desc="Simulation"):
-        chain.metropolis_pass()
+        chain.advance(index_criterion=True)
         if i % args.frame_step == 0:
             index = i // args.frame_step
             energy[index] = chain.energy()
@@ -65,8 +62,8 @@ if __name__ == '__main__':
         help="Interaction term"
     )
     parser.add_argument(
-        '-B', dest='burn_in', type=int, default=10,
-        help="Number of burn-in passes"
+        '-AR', dest='action_rates', type=float, default=np.full((3, 2), 1),
+        help="Action rates"
     )
     parser.add_argument(
         '-l', dest='length', type=int, default=1000,
