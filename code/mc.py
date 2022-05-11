@@ -39,6 +39,8 @@ def main(args):
     bundle = chain.export_dict()
     bundle['energy_sample'] = energy.tolist()
     bundle['magnetization_sample'] = magnetization.tolist()
+    bundle['initial_number_sample'] = args.length
+    bundle['frame_step'] = args.frame_step
     with open(args.output, 'w') as file:
         json.dump(bundle, file)
     print(f"Simulations saved to {args.output}")
