@@ -35,3 +35,19 @@ def test_got():
 
 def test_two_samples():
     f_exp = 0
+
+def test_theoretical_distributions():
+    """Test `theoretical_distributions()`"""
+    eng, mgn = theoretical_distributions(Chain())
+
+    assert len(eng) == 2
+    assert len(mgn) == 4
+
+    assert np.all(eng[:, 0] == [-3, 1])
+    assert mgn[0, 0] == -1.0
+    assert mgn[1, 0] == -1/3
+    assert mgn[2, 0] == 1/3
+    assert mgn[3, 0] == 1.0
+
+    assert eng[0, 1] == approx(0.948, abs=0.005)
+    assert eng[1, 1] == approx(0.052, abs=0.005)

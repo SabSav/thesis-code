@@ -165,7 +165,6 @@ class Metropolis(Chain):
 
 
 def acrl(m, time_evolution):
-    m = np.asarray(m)
     m_demean = m - np.mean(m)
     nrm = np.var(m_demean)
     tot = len(m_demean)
@@ -174,8 +173,62 @@ def acrl(m, time_evolution):
         for t in range(time_evolution)
     ]) / nrm
 
-def theoretical_quantities(chain: Chain, n_samples):
+def theoretical_distributions(chain: Chain):
+    """Return theoretical distributions for the energy and magnetization
 
+    The estimates are returned within a reasonable time with 25 spins or less.
+
+    Args:
+        chain: Ising chain for which the estimates are calculated
+
+    Returns:
+        (float, (n, 2)): `n` energy levels with values in the first column
+            and their probabilities in the second (sorted by the energy)
+
+        (float, (n, 2)): `n` magnetization states with values in the first
+            column and their probabilities in the second (sorted by values)
+    """
+    # RB: if you collect values of energy and magnetization for each
+    # RB: configuration, you will run out of memory—it is a HUGE number. Let's
+    # RB: better collect unique values, which matter in the histogram
+
+    size = len(chain.spins)
+    eng = {} # RB: Energy levels with their weights
+    mgn = {} # RB: Magnetization values (not mean) with their wights
+    for conf in tqdm(
+            itertools.product([1, -1], repeat=size), total=2**size,
+            desc='Generating theoretical configurations'
+        ):
+        chain.spins = conf
+
+        e = chain.energy()
+        weight = np.exp(-e / chain.temperature)
+        if e in eng: # accumulate energy weights
+            eng[e] += weight
+        else:
+            eng[e] = weight
+
+        m = np.sum(chain.spins)
+        if m in mgn: # accumulate magnetization weights
+            mgn[m] += weight
+        else:
+            mgn[m] = weight
+
+    z = np.sum(list(eng.values()))
+    energy = np.array(list(
+        map(lambda item: [item[0], item[1] / z], eng.items())
+    ))
+    magnetization = np.array(list(
+        map(lambda item: [item[0] / size, item[1] / z], mgn.items())
+    ))
+
+    return (
+        energy[np.argsort(energy[:, 0])],
+        magnetization[np.argsort(magnetization[:, 0])]
+    )
+
+def theoretical_quantities(chain: Chain, n_samples):
+    # RB: you can now reimplement this function using `theoretical_distributions`
     theory_engy = []
     theory_m = []
     for conf in tqdm(itertools.product([1, -1], repeat=len(chain.spins)), desc='Generating theoretical configurations'):
@@ -202,8 +255,8 @@ def theoretical_quantities(chain: Chain, n_samples):
 
     return theory_engy, theory_m, theory_engy_counts, binomial_average, binomial_std
 
-
 def count_variables(var):
+    # RB: check default python implementation for `collections.Counter`
     var = np.sort(var)
     keys = [float(value) for value in var]
     var_count = defaultdict(int)
@@ -214,7 +267,7 @@ def count_variables(var):
 
 
 def std_algorithms(counts, theory_avg, theory_engy, theory_std):
-
+    # RB: check default python implementation for `collections.Counter`
     energy_level = defaultdict(int)
     keys = [float(value) for value in theory_engy]
     for k in zip(keys):
