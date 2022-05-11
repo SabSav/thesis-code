@@ -26,3 +26,12 @@ def test_DynamicChain():
     assert (chain.action_rates == [[1.0, 1.0], [1.0, 1.0], [1.0, 1.0]]).all()
     assert chain.action_rate(1, 1) == 1.0
     assert chain.action_rate(1, -1) == 1.0
+
+def test_got():
+    """Test `ising.gof()`"""
+    f_exp = [999, 1]
+    f_obs = [999, 1]
+    assert gof(f_obs, f_exp) == 0.0
+
+def test_two_samples():
+    f_exp = 0

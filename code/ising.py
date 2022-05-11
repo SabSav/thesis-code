@@ -125,7 +125,7 @@ class DynamicChain(Chain):
             self._buffer = np.empty_like(self.spins)
         return self._buffer
 
-    def advance(self, index_criterion):
+    def advance(self):
         """Apply one simulation step of the algorithm I"""
         buffer = self._prepare_buffer()
         buffer.fill(1)
@@ -135,31 +135,17 @@ class DynamicChain(Chain):
 
             # RB: That is lame hard coding =) You have `action_rates` keyword argument (kwarg),
             # RB: which you can use to specify you action rates. Do not hard-code your action rates!
-            if index_criterion:
-                if spin_to_change % 2 != 0:
-                    action_rates_ratio = self.action_rate(spin_to_change, 1) / self.action_rate(spin_to_change, -1)
-                    weight = np.exp(-(1 / self.temperature) * dE) * action_rates_ratio
-                    prob_change = self.action_rate(spin_to_change, -1) * weight / (1 + weight)
-                else:
-                    action_rates_ratio = self.action_rate(spin_to_change, -1) / self.action_rate(spin_to_change, 1)
-                    weight = np.exp(-(1 / self.temperature) * dE) * action_rates_ratio
-                    prob_change = self.action_rate(spin_to_change, 1) * weight / (1 + weight)
-            else:
-                if self.spins[spin_to_change] < 0:
-                    action_rates_ratio = self.action_rate(spin_to_change, 1) / self.action_rate(spin_to_change, -1)
-                    weight = np.exp(-(1 / self.temperature) * dE) * action_rates_ratio
-                    prob_change = self.action_rate(spin_to_change, -1) * weight / (1 + weight)
-                else:
-                    action_rates_ratio = self.action_rate(spin_to_change, -1) / self.action_rate(spin_to_change, 1)
-                    weight = np.exp(-(1 / self.temperature) * dE) * action_rates_ratio
-                    prob_change = self.action_rate(spin_to_change, 1) * weight / (1 + weight)
+
+            value = self.spins[spin_to_change]
+            action_rates_ratio = self.action_rate(spin_to_change, -value) / self.action_rate(spin_to_change, value)
+            weight = np.exp(-dE / self.temperature) * action_rates_ratio
+            prob_change = self.action_rate(spin_to_change, value) * weight / (1 + weight)
 
             rank = np.random.random()
             if prob_change > rank:
                 buffer[spin_to_change] = -1
         self.spins *= buffer
         return self.spins
-
 
 class Metropolis(Chain):
 
@@ -183,12 +169,10 @@ def acrl(m, time_evolution):
     m_demean = m - np.mean(m)
     nrm = np.var(m_demean)
     tot = len(m_demean)
-    m_corr = np.empty(time_evolution)
-    for t in range(time_evolution):
-        m_corr[t] = 1 if nrm == 0 else np.mean(m_demean[t:] * m_demean[:tot - t]) / nrm
-
-    return m_corr
-
+    return np.array([
+        np.mean(m_demean[t:] * m_demean[:tot - t])
+        for t in range(time_evolution)
+    ]) / nrm
 
 def theoretical_quantities(chain: Chain, n_samples):
 
@@ -260,12 +244,20 @@ def std_algorithms(counts, theory_avg, theory_engy, theory_std):
 
 
 def gof(f_obs, f_exp):
+    """Calculate goodness of fit
+
+    Args:
+        f_obs (int[]): One-dimensional array of counts in a sample
+        f_exp (int[]): Expected level of counts
+
+    Returns: p-value (the goodness of fit)
+    """
+    k = len(f_exp) - 1 # number of degrees of freedom
     t_statistics = 0
     for i in range(len(f_exp)):
         t_statistics += pow(f_obs[i] - f_exp[i], 2) / f_obs[i]
 
-    return sc.gammainc(0.5*(len(f_exp) - 1), t_statistics*0.5)
-
+    return sc.gammainc(k / 2, t_statistics / 2)
 
 def two_sample_chi2test(dict_a, dict_b, n_samples_a, n_samples_b):
     k1 = pow(n_samples_b / n_samples_a, 1 / 2)
@@ -314,4 +306,3 @@ if __name__ == '__main__':
 
     random_seed = 1
     np.random.seed(random_seed)
-

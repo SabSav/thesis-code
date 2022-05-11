@@ -13,7 +13,7 @@ import ising
 
 
 def main(args):
-    """Perform Metropolis sampling of an Ising chain
+    """@deprecated Perform Metropolis sampling of an Ising chain
 
     Args:
         args: Parsed command-line arguments
@@ -42,6 +42,53 @@ def main(args):
     with open(args.output, 'w') as file:
         json.dump(bundle, file)
     print(f"Simulations saved to {args.output}")
+
+def simulate(
+        output, size=3, temperature=1.0, field=0.0, coupling=1.0, burn_in=10,
+        length=1000, seed=0, frame_step=1
+    ):
+    """Perform Metropolis sampling of an Ising chain
+
+    The sample is output into a JSON file.
+
+    Args:
+        output (str): Path to the output file, which will be created or, if
+            exists, overwritten
+        size (int): Chain size
+        temperature (float): Heat bath temperature
+        field (float): External magnetic field
+        coupling (float): Spin coupling constant
+        burn_in (int): Number of burn_in passes
+        length (int): Total length of the simulation
+        seed (int): Random generator seed
+        frame_step (int): Number of steps between the sampled frames
+    """
+
+    chain = ising.Metropolis(
+        size=size, temperature=temperature, field=field, coupling=coupling
+    )
+    np.random.seed(seed)
+    energy = np.empty(length // frame_step)
+    magnetization = np.empty_like(energy)
+
+    # Skip the first burn_in samples so that the stationary distribution is reached
+    for _ in tqdm(range(burn_in), desc="Burn-in"): chain.metropolis_pass()
+
+    # Collect samples
+    for i in tqdm(range(length), desc="Simulation"):
+        chain.metropolis_pass()
+        if i % frame_step == 0:
+            index = i // frame_step
+            energy[index] = chain.energy()
+            magnetization[index] = np.mean(chain.spins)
+
+    bundle = chain.export_dict()
+    bundle['energy_sample'] = energy.tolist()
+    bundle['magnetization_sample'] = magnetization.tolist()
+    bundle['frame_step'] = frame_step
+    with open(output, 'w') as file:
+        json.dump(bundle, file)
+    print(f"Simulations saved to {output}")
 
 
 ### Execute main script
