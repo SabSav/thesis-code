@@ -214,18 +214,15 @@ def theoretical_distributions(chain: Chain):
         else:
             mgn[m] = weight
 
-    z = np.sum(list(eng.values()))
-    energy = np.array(list(
-        map(lambda item: [item[0], item[1] / z], eng.items())
-    ))
-    magnetization = np.array(list(
-        map(lambda item: [item[0] / size, item[1] / z], mgn.items())
-    ))
+    energy = np.array(sorted(eng.items()))
+    magnetization = np.array(sorted(mgn.items()))
 
-    return (
-        energy[np.argsort(energy[:, 0])],
-        magnetization[np.argsort(magnetization[:, 0])]
-    )
+    z = np.sum(energy[:, 1])
+    energy[:, 1] /= z
+    magnetization[:, 0] /= size
+    magnetization[:, 1] /= z
+
+    return energy, magnetization
 
 def theoretical_quantities(chain: Chain, n_samples):
     # RB: you can now reimplement this function using `theoretical_distributions`
@@ -313,18 +310,22 @@ def gof(f_obs, f_exp):
     return sc.gammainc(k / 2, t_statistics / 2)
 
 def two_sample_chi2test(dict_a, dict_b, n_samples_a, n_samples_b):
+    # RB: a more reliable way to do `n_samples_* = np.sum(list(dica_*))`
     k1 = pow(n_samples_b / n_samples_a, 1 / 2)
     k2 = pow(n_samples_a / n_samples_b, 1 / 2)
 
     total_keys = np.unique(list(dict_a.keys()) + list(dict_b.keys()))
+    # RB: `items_a` and `items_b` are superfluous
     items_a = list(dict_a.items())
     items_b = list(dict_b.items())
     for key in total_keys:
+        # RB: just `key not in dict_a`
         if key not in list(dict_a.keys()):
-            items_a.insert(0, (key, 0))
+            items_a.insert(0, (key, 0)) # RB: just `dict_a[key] = 0`
+        # RB: just `key not in dict_b`
         if key not in list(dict_b.keys()):
-            items_b.insert(0, (key, 0))
-
+            items_b.insert(0, (key, 0))  # RB: just `dict_a[key] = 0`
+    # RB: Just `sorted(dict_*.items())`
     dict_a = OrderedDict(sorted(dict(items_a).items()))
     dict_b = OrderedDict(sorted(dict(items_b).items()))
 
