@@ -163,16 +163,17 @@ class Metropolis(Chain):
 
 
 def acrl(v, time_evolution):
-    """Calculate the correlation for both energy and magnetization samples
+    """Calculate the correlation for both quantity v
     Args:
         v: 1D array of samples
         time_evolution:
-    Returns: dictionary with the counts per energy levels/ magnetization values
+    Returns: correlation
     """
     v = np.asarray(v)
     v_demean = v - np.mean(v)
     nrm = np.var(v_demean)
     tot = len(v_demean)
+
     return np.array([
         np.mean(v_demean[t:] * v_demean[:tot - t])
         for t in range(time_evolution)
@@ -202,17 +203,18 @@ def theoretical_distributions(chain: Chain):
             itertools.product([1, -1], repeat=size), total=2 ** size,
             desc='Generating theoretical configurations'
     ):
+
         chain.spins = conf
 
         e = chain.energy()
         weight = np.exp(-e / chain.temperature)
-        if e in eng:  # accumulate energy weights
+        if e in eng: # accumulate energy weights
             eng[e] += weight
         else:
             eng[e] = weight
 
         m = np.sum(chain.spins)
-        if m in mgn:  # accumulate magnetization weights
+        if m in mgn: # accumulate magnetization weights
             mgn[m] += weight
         else:
             mgn[m] = weight
@@ -221,9 +223,9 @@ def theoretical_distributions(chain: Chain):
     magnetization = np.array(sorted(mgn.items()))
 
     z = np.sum(energy[:, 1])
-    energy[:, 1] /= z #normalized probability
-    magnetization[:, 0] /= size #average value
-    magnetization[:, 1] /= z    #normalized probability
+    energy[:, 1] /= z
+    magnetization[:, 0] /= size
+    magnetization[:, 1] /= z
 
     return energy, magnetization
 
@@ -268,6 +270,7 @@ def std_algorithms(counts, theory_avg, theory_quantity_counts, theory_std):
 
     quantity_level = defaultdict(int)
     keys = theory_quantity_counts[:, 0]
+
     for k in zip(keys):
         quantity_level[k] = 0
     i = 0
