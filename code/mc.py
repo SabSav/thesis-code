@@ -45,6 +45,7 @@ def main(args):
         json.dump(bundle, file)
     print(f"Simulations saved to {args.output}")
 
+
 def simulate(
         output, size=3, temperature=1.0, field=0.0, coupling=1.0, burn_in=10,
         length=1000, seed=0, frame_step=1

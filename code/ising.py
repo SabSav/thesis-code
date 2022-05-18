@@ -1,11 +1,11 @@
 """Simulation tools for Ising model"""
 import itertools
 from collections import defaultdict
+from collections import Counter
 from collections import OrderedDict
 import numpy
 import numpy as np
 import scipy
-from scipy import special as sc
 from scipy import stats
 from tqdm import tqdm
 
@@ -20,7 +20,7 @@ class Chain:
     # 1) init is used to create an object
     # 2) kwards is used to pass a dictionary
 
-    def __init__(self, coupling=1, temperature=1.0, field=0., **kwargs):
+    def __init__(self, coupling=1.0, temperature=1.0, field=0., **kwargs):
         """Initialize an Ising chain
 
                 Args:
@@ -133,9 +133,6 @@ class DynamicChain(Chain):
         for spin_to_change in range(len(self.spins)):
             dE = self.deltaE(spin_to_change)
 
-            # RB: That is lame hard coding =) You have `action_rates` keyword argument (kwarg),
-            # RB: which you can use to specify you action rates. Do not hard-code your action rates!
-
             value = self.spins[spin_to_change]
             action_rates_ratio = self.action_rate(spin_to_change, -value) / self.action_rate(spin_to_change, value)
             weight = np.exp(-dE / self.temperature) * action_rates_ratio
@@ -147,9 +144,10 @@ class DynamicChain(Chain):
         self.spins *= buffer
         return self.spins
 
+
 class Metropolis(Chain):
 
-    def __init__(self, coupling=1, temperature=1.0, field=0., **kwargs):
+    def __init__(self, coupling=1.0, temperature=1.0, field=0., **kwargs):
         super().__init__(coupling, temperature, field, **kwargs)
 
     def metropolis_pass(self):
@@ -164,75 +162,128 @@ class Metropolis(Chain):
         return self.spins
 
 
-def acrl(m, time_evolution):
-    m = np.asarray(m)
-    m_demean = m - np.mean(m)
-    nrm = np.var(m_demean)
-    tot = len(m_demean)
+def acrl(v, time_evolution):
+    """Calculate the correlation for both energy and magnetization samples
+    Args:
+        v: 1D array of samples
+        time_evolution:
+    Returns: dictionary with the counts per energy levels/ magnetization values
+    """
+    v = np.asarray(v)
+    v_demean = v - np.mean(v)
+    nrm = np.var(v_demean)
+    tot = len(v_demean)
     return np.array([
-        np.mean(m_demean[t:] * m_demean[:tot - t])
+        np.mean(v_demean[t:] * v_demean[:tot - t])
         for t in range(time_evolution)
     ]) / nrm
 
-def theoretical_quantities(chain: Chain, n_samples):
 
-    theory_engy = []
-    theory_m = []
-    for conf in tqdm(itertools.product([1, -1], repeat=len(chain.spins)), desc='Generating theoretical configurations'):
+def theoretical_distributions(chain: Chain):
+    """Return theoretical distributions for the energy and magnetization
+
+    The estimates are returned within a reasonable time with 25 spins or less.
+
+    Args:
+        chain: Ising chain for which the estimates are calculated
+
+    Returns:
+        (float, (n, 2)): `n` energy levels with values in the first column
+            and their probabilities in the second (sorted by the energy)
+
+        (float, (n, 2)): `n` magnetization states with values in the first
+            column and their probabilities in the second (sorted by values)
+    """
+
+    size = len(chain.spins)
+    eng = {}  # Energy levels with their weights
+    mgn = {}  # Magnetization values (not mean) with their wights
+    for conf in tqdm(
+            itertools.product([1, -1], repeat=size), total=2 ** size,
+            desc='Generating theoretical configurations'
+    ):
         chain.spins = conf
-        theory_m.append(np.mean(chain.spins))
-        theory_engy.append(chain.energy())
 
-    # RB: this can be majorly simplified
-    theory_engy = np.sort(theory_engy)
-    weights_config = np.exp(-(1 / chain.temperature) * theory_engy)
-    config_prob = weights_config / sum(weights_config)
-    keys = [float(value) for value in theory_engy]
-    energy_prob = defaultdict(int)  # probability of a precise value of energy
-    for k, n in zip(keys, config_prob):
-        energy_prob[k] += n
-    binomial_average = np.empty(len(energy_prob))
-    binomial_std = np.empty(len(energy_prob))
-    if len(chain.spins) <= 4: #adding this to calculate energy for spins chain > 4
-        for i in range(len(energy_prob)):
-            binomial_average[i] = scipy.stats.binom.mean(n=n_samples, p=list(energy_prob.values())[i])
-            binomial_std[i] = scipy.stats.binom.std(n=n_samples, p=list(energy_prob.values())[i])
+        e = chain.energy()
+        weight = np.exp(-e / chain.temperature)
+        if e in eng:  # accumulate energy weights
+            eng[e] += weight
+        else:
+            eng[e] = weight
 
-    theory_engy_counts = [value * n_samples for value in list(energy_prob.values())]
+        m = np.sum(chain.spins)
+        if m in mgn:  # accumulate magnetization weights
+            mgn[m] += weight
+        else:
+            mgn[m] = weight
 
-    return theory_engy, theory_m, theory_engy_counts, binomial_average, binomial_std
+    energy = np.array(sorted(eng.items()))
+    magnetization = np.array(sorted(mgn.items()))
+
+    z = np.sum(energy[:, 1])
+    energy[:, 1] /= z #normalized probability
+    magnetization[:, 0] /= size #average value
+    magnetization[:, 1] /= z    #normalized probability
+
+    return energy, magnetization
 
 
-def count_variables(var):
-    var = np.sort(var)
-    keys = [float(value) for value in var]
-    var_count = defaultdict(int)
+def theoretical_quantities(n_samples, quantity):
+    """Calculate the theoretical energy and magnetization counts.
+       Calculate the binomial avg and std deviation for theoretical energy
+
+        Args:
+            n_samples: total number of samples of the algorithms
+            quantity: theoretical quantity
+
+        Returns:
+            (float, 1D-array): counts per theoretical quantity level
+            (float): multinomial average
+            (float): multinomial standard deviation
+        """
+    theory_quantity_counts = [quantity[i, 1] * n_samples for i in range(len(quantity))]
+
+    binom_average = np.empty(len(quantity))
+    binom_std = np.empty(len(quantity))
+
+    for i in range(len(quantity)):
+        binom_average[i] = scipy.stats.binom.mean(n_samples, p=quantity[i, 1])
+        binom_std[i] = scipy.stats.binom.std(n=n_samples, p=quantity[i, 1])
+
+    return theory_quantity_counts, binom_average, binom_std
+
+
+def std_algorithms(counts, theory_avg, theory_quantity_counts, theory_std):
+    """Calculate the std for the two algorithms for the barchart (used when N.spins <= 4)
+        Args:
+            counts: counts per quantity level generating by the algorithm
+            theory_avg: binomial avg
+            theory_engy: theoritical counts per quantity level
+            theory_std: binomial std
+
+        Returns: multiplicity: integer value that multiply the theory_std
+                 std: actual std of the algorithms for each bar
+                 counts: dictionary with the counts per energy level
+    """
+
+    quantity_level = defaultdict(int)
+    keys = theory_quantity_counts[:, 0]
     for k in zip(keys):
-        var_count[k] += 1
-    var_count = {key[0]: value for key, value in var_count.items()}
-    return var_count
-
-
-def std_algorithms(counts, theory_avg, theory_engy, theory_std):
-
-    energy_level = defaultdict(int)
-    keys = [float(value) for value in theory_engy]
-    for k in zip(keys):
-        energy_level[k] = 0
+        quantity_level[k] = 0
     i = 0
-    for k in energy_level.keys():
-        energy_level[k] = theory_avg[i]
+    for k in quantity_level.keys():
+        quantity_level[k] = theory_avg[i]
         i += 1
-    energy_level = {key[0]: value for key, value in energy_level.items()}
+    quantity_level = {key[0]: value for key, value in quantity_level.items()}
 
     items = list(counts.items())
-    if len(energy_level) > len(counts.values()):
-        for key in list(energy_level.keys()):
+    if len(quantity_level) > len(counts.values()):
+        for key in list(quantity_level.keys()):
             if key not in list(counts.keys()):
                 items.insert(0, (key, 0))
     counts = OrderedDict(sorted(dict(items).items()))
 
-    multiplicity = np.empty(len(energy_level))
+    multiplicity = np.empty(len(quantity_level))
     std = theory_std
     for i in range(len(theory_avg)):
         factor = abs(list(counts.values())[i] - theory_avg[i]) / theory_std[i]
@@ -243,51 +294,94 @@ def std_algorithms(counts, theory_avg, theory_engy, theory_std):
     return multiplicity, std, counts
 
 
-def gof(f_obs, f_exp):
-    """Calculate goodness of fit
+def count_variables(var):
+    """Calculate the counts for energy level/magnetization values
+        Args:
+            var: samples of the algorithm
 
-    Args:
-        f_obs (int[]): One-dimensional array of counts in a sample
-        f_exp (int[]): Expected level of counts
-
-    Returns: p-value (the goodness of fit)
+        Returns: dictionary with the counts per energy levels/ magnetization values
     """
-    k = len(f_exp) - 1 # number of degrees of freedom
-    t_statistics = 0
-    for i in range(len(f_exp)):
-        t_statistics += pow(f_obs[i] - f_exp[i], 2) / f_obs[i]
+    var = np.sort(var)
+    var_count = Counter(var)
+    return var_count
 
-    return sc.gammainc(k / 2, t_statistics / 2)
 
-def two_sample_chi2test(dict_a, dict_b, n_samples_a, n_samples_b):
-    k1 = pow(n_samples_b / n_samples_a, 1 / 2)
-    k2 = pow(n_samples_a / n_samples_b, 1 / 2)
+def test_theoretical(f_obs, theory_prob, n_samples, eps):
+    """Testing for equivalence of a single multinomial distribution with a fully specified reference distribution
+       upper bound = eps^2 - qnorm(1-alpha)*std
+       distance = (prob_sample - theory_prob)**2
+       Reject lack of fit if distance < upper_bound
+            Args:
+                f_obs: counts of the quantity to analyze
+                theory_prob: theoretical probabilities
+                n_samples: total number of samples
+                eps: tolerance level
 
+            Returns: dictionary with:
+                    - distance
+                    - upper bound
+                    - reject: if True the two distribution are the same, False the two dristibution are not the same
+    """
+    prob_sample = np.array([i/n_samples for i in f_obs])
+    dist_sample = 0
+    var1 = 0
+    var2 = 0
+    for i in range(len(theory_prob)):
+        dist_sample += (prob_sample[i] - theory_prob[i])**2
+        var1 += (prob_sample[i] - theory_prob[i])**2 * prob_sample[i]
+    for i in range(len(theory_prob)):
+        for j in range(len(theory_prob)):
+            var2 += (prob_sample[i] - theory_prob[i]) * (prob_sample[j] - theory_prob[j]) * prob_sample[i] * prob_sample[j]
+    std = np.sqrt((4 * (var1 - var2))/n_samples)
+    alpha = 0.05
+    upper_bound = eps**2 - scipy.stats.norm.ppf(1 - alpha)*std
+    reject = False
+    if dist_sample < upper_bound:
+        reject = True
+    results = {"Distance": dist_sample, "Upper_bound": upper_bound, "Reject": reject}
+    return results
+
+
+def z_test(f1, f2, n_samples):
+    """Z-test for the counts of the two algorithms. It assumes independence in the samples (articles)
+    :param f1: counts per quantity level of the first algorithm
+    :param f2: counts per quantity level of the second algorithm
+    :param n_samples:
+    :return: p-value of z-test
+    """
+    prob_sample1 = np.array([i/n_samples for i in f1])
+    prob_sample2 = np.array([i / n_samples for i in f2])
+    diff_rv = 0
+    for i in range(len(f1)):
+        diff_rv += prob_sample1[i] - prob_sample2[i]
+    std = np.sqrt(np.var(prob_sample1)/n_samples + np.var(prob_sample2)/n_samples)
+    return 2*scipy.stats.norm.sf(x=abs(diff_rv), loc=0, scale=std)
+
+
+def equilibrate_counts(dict_a, dict_b):
     total_keys = np.unique(list(dict_a.keys()) + list(dict_b.keys()))
-    items_a = list(dict_a.items())
-    items_b = list(dict_b.items())
     for key in total_keys:
-        if key not in list(dict_a.keys()):
-            items_a.insert(0, (key, 0))
-        if key not in list(dict_b.keys()):
-            items_b.insert(0, (key, 0))
+        if key not in dict_a.keys():
+            dict_a[key] = 0
+        if key not in dict_b.keys():
+            dict_b[key] = 0
 
-    dict_a = OrderedDict(sorted(dict(items_a).items()))
-    dict_b = OrderedDict(sorted(dict(items_b).items()))
+    # RB: Just `sorted(dict_*.items())` -> non funziona
+    dict_a = OrderedDict(sorted(dict_a.items()))
+    dict_b = OrderedDict(sorted(dict_b.items()))
 
-    df = len(list(dict_a.values())) - 1
-    t_statistics = 0
-    for bin in range(len(list(dict_a.values()))):
-        if list(dict_a.values())[bin] == 0 and list(dict_b.values())[bin] == 0:
-            df -= 1
-        else:
-            t_statistics += pow(k1 * list(dict_a.values())[bin] -
-                               k2 * list(dict_b.values())[bin], 2) / (list(dict_a.values())[bin] +
-                                                                      list(dict_b.values())[bin])
-    return sc.gammainc(0.5*df, t_statistics*0.5)
+    return dict_a, dict_b
 
 
 def hist(chain: Chain, vector_values, engy_flag):
+    """Define the bin_bound of the histogram per energy and magnetization
+        Args:
+            chain: class used to access at the coupling/spins value
+            vector_values: samples of the algorithm
+            engy_flag: flag used because in the energy histogram we have to rescale to E - Emin the plot
+
+        Returns: dictionary with the counts per energy levels/ magnetization values
+    """
     if engy_flag:
         bin_centers = sorted([value - 2 * abs(chain.coupling) for value in vector_values])
         bin_centers = [value + 4 * abs(chain.coupling) for value in bin_centers]
@@ -303,6 +397,5 @@ def hist(chain: Chain, vector_values, engy_flag):
 
 
 if __name__ == '__main__':
-
     random_seed = 1
     np.random.seed(random_seed)

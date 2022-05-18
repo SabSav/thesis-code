@@ -20,6 +20,7 @@ def test_Chain():
     assert chain.deltaE(0) == 0
     assert chain.energy() == 3
 
+
 def test_DynamicChain():
     """Test basic functionality of `ising.DynamicChain`"""
     chain = DynamicChain()
@@ -27,11 +28,11 @@ def test_DynamicChain():
     assert chain.action_rate(1, 1) == 1.0
     assert chain.action_rate(1, -1) == 1.0
 
-def test_got():
-    """Test `ising.gof()`"""
-    f_exp = [999, 1]
-    f_obs = [999, 1]
+
+def test_gof():
+    """Test `ising.gof()` 3 spins T = 0.5 MC algorithm"""
+    f_exp = [99899, 101]
+    f_obs = [99919, 81]
     assert gof(f_obs, f_exp) == 0.0
 
-def test_two_samples():
-    f_exp = 0
+
