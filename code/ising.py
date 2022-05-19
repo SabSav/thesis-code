@@ -309,7 +309,7 @@ def count_variables(var):
     return var_count
 
 
-def test_theoretical(f_obs, theory_prob, n_samples, eps):
+def theoretical_test(f_obs, theory_prob, n_samples, eps):
     """Testing for equivalence of a single multinomial distribution with a fully specified reference distribution
        upper bound = eps^2 - qnorm(1-alpha)*std
        distance = (prob_sample - theory_prob)**2
