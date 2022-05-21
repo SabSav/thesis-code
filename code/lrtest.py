@@ -25,6 +25,17 @@ def one_sample_test(probabilities, counts):
     ) / (6 * tot * (num - 1)) # Williams' correction
     return sp.special.gammaincc((num - 1) / 2, stat) # and here do not divide ratio by 2
 
+    # # Smith method simplified to O(1/N^2) does not improve the situation so much
+    # stat = -2 * np.dot(counts, np.log(probabilities / est))
+    # parM = -2 * tot * np.log(np.min(probabilities))
+    # pinv = 1 / probabilities
+    # parE = num - 1 + (np.sum(pinv) - 1) / (6 * tot)
+    # parV = 2 * (num - 1) + (np.sum(pinv) - 1) / (2 * tot / 3)
+    #
+    # a = parE / (parM * parV) * (parE * (parM - parE) - parV)
+    # b = (parM - parE) * a / parE
+    # return 1 - sp.special.betainc(a, b, stat / parM)
+
 def two_samples_test(sample1, sample2):
     """Likelihood ratio test with two samples from a multinomial distribution
 
