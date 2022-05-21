@@ -6,7 +6,7 @@ import scipy as sp
 
 def test_one_sample_test():
     """Test `one_sample_test()`"""
-    size = 100
+    size = 100000
     n = 10
 
     p = 0.1
