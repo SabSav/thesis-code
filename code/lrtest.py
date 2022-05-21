@@ -36,6 +36,25 @@ def one_sample_test(probabilities, counts):
     # b = (parM - parE) * a / parE
     # return 1 - sp.special.betainc(a, b, stat / parM)
 
+def one_sample_chi_squared(probabilities, counts):
+    """Chi-squred test with one sample from a multinomial distribution
+
+    The larger is the p-value of the test, the more likely that the sample comes
+    from a given multinomial distribution.
+
+    Args:
+        probabilities (numpy array of floats): theoretical probabilities for categories
+        counts (numpy array of integers): Sample of categories' counts
+    Returns:
+        P-value for the hypothesis that the sample comes from a given multinomial
+            distribution
+    """
+    tot = np.sum(counts)
+    num = len(counts) # number of categories
+    est = tot * probabilities
+    stat = np.sum((counts - est)**2 / est)
+    return sp.special.gammaincc((num - 1) / 2, stat / 2) # and here do not divide ratio by 2
+
 def two_samples_test(sample1, sample2):
     """Likelihood ratio test with two samples from a multinomial distribution
 
