@@ -43,3 +43,9 @@ def test_theoretical_distributions():
 
     assert eng[0, 1] == approx(0.948, abs=0.005)
     assert eng[1, 1] == approx(0.052, abs=0.005)
+
+def test_typical_delta():
+    chain = Chain(coupling=1, spins=[1, 1, 1])
+
+    assert chain.typical_delta() == 4.0
+    for s in chain.spins: assert s == 1
