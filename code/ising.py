@@ -64,6 +64,16 @@ class Chain:
         """Return energy cost of flipping a given spin"""
         return 2 * self.spins[i] * (self.field + self.coupling * (self.spins[(i - 1) % len(self.spins)] +
                                                                   self.spins[(i + 1) % len(self.spins)]))
+    def calc_typical_delta(self, size=100):
+        """Sample typical energy difference"""
+        backup = self.spins
+
+        sample = np.empty(size)
+        for s in range(size):
+            self.spins = 2 * np.random.randint(2, size=size) - 1
+            sample[s] = self.deltaE(np.random.randint(len(self.spins)))
+
+        return np.mean(sample)
 
     def energy(self):
         """Return the chain energy"""
