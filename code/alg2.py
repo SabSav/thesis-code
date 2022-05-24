@@ -1,10 +1,10 @@
-"""Algorithm 1 simulation of a one-dimensional Ising model
+"""Algorithm 2 simulation of a one-dimensional Ising model
 
-This script performs the dynamic simulation of an Ising chain and outputs parameters
+This script performs the continuous dynamic simulation of an Ising chain and outputs parameters
 of the simulation together with a sample of energy and average magnetization into
 a given file in the JSON format.
 
-Usage: python code/mc.py -h
+Usage: python code/alg2.py -h
 """
 import argparse, json
 import numpy as np
@@ -13,27 +13,43 @@ import ising
 
 
 def main(args):
-    """Perform Metropolis sampling of an Ising chain
+    """Perform Alg2 sampling of an Ising chain
 
     Args:
         args: Parsed command-line arguments
     """
 
-    chain = ising.DynamicChain(size=args.size, temperature=args.temperature, coupling=args.coupling,
-                               field=args.field, action_rates=args.action_rates)
+    chain = ising.ContinuousDynamic(size=args.size, temperature=args.temperature, coupling=args.coupling,
+                                    field=args.field, action_rates=args.action_rates)
     np.random.seed(args.seed)
-    energy = np.empty(args.length // args.frame_step)
-    magnetization = np.empty_like(energy)
+    energy = []
+    magnetization = []
 
-    for _ in tqdm(range(args.burn_in), desc="Burn-in"): chain.advance()
-    # Collect samples
-    for i in tqdm(range(args.length), desc="Simulation"):
-        chain.advance()
-        if i % args.frame_step == 0:
-            index = i // args.frame_step
-            energy[index] = chain.energy()
-            magnetization[index] = np.mean(chain.spins)
+    random_times = chain.set_random_times()
+    sorted_indexes = chain.find_time_sequence()
+    time = 0
+    while time <= args.burn_in:
+        for index in sorted_indexes:
+            time += random_times[index]  # update the time
+            chain.continuous_advance(index)  # evaluate new configuration
+        random_times = chain.set_random_times()  # recalculate the random dt
+        sorted_indexes = chain.find_time_sequence()
 
+    random_times = chain.set_random_times()
+    sorted_indexes = chain.find_time_sequence()
+    time = 0
+    while time <= args.length:
+        for index in sorted_indexes:
+            time += random_times[index]
+            chain.continuous_advance(index)
+            if time % args.frame_step == 0:
+                energy.append(chain.energy())
+                magnetization.append(np.mean(chain.spins))
+        random_times = chain.set_random_times()
+        sorted_indexes = chain.find_time_sequence()
+
+    energy = np.array(energy)
+    magnetization = np.array(magnetization)
     bundle = chain.export_dict()
     bundle['energy_sample'] = energy.tolist()
     bundle['magnetization_sample'] = magnetization.tolist()
@@ -45,8 +61,8 @@ def main(args):
 def simulate(
         output, size=3, temperature=1.0, field=0.0, coupling=1.0, burn_in=10,
         length=1000, seed=0, frame_step=1, action_rates=None
-    ):
-    """Perform sampling of an Ising chain simulated by the Algoirthm 1
+):
+    """Perform sampling of an Ising chain simulated by the Algoirthm 2
 
     The sample is output into a JSON file.
 
@@ -64,31 +80,44 @@ def simulate(
         action_rates (int[]): Action rates of the spins
     """
 
-    chain = ising.DynamicChain(
-        size=size, temperature=temperature, coupling=coupling,
-                               field=field, action_rates=action_rates)
+    chain = ising.ContinuousDynamic(size=size, temperature=temperature, coupling=coupling,
+                                    field=field, action_rates=action_rates)
     np.random.seed(seed)
-    energy = np.empty(length // frame_step)
-    magnetization = np.empty_like(energy)
+    energy = []
+    magnetization = []
 
-    # Relax initial configuration
-    for _ in tqdm(range(burn_in), desc="Burn-in"): chain.advance()
+    random_times = chain.set_random_times()
+    sorted_indexes = chain.find_time_sequence()
+    time = 0
+    while time <= burn_in:
+        for index in sorted_indexes:
+            time += random_times[index]
+            chain.continuous_advance(index)
+        random_times = chain.set_random_times()
+        sorted_indexes = chain.find_time_sequence()
 
-    # Collect samples
-    for i in tqdm(range(length), desc="Simulation"):
-        chain.advance()
-        if i % frame_step == 0:
-            index = i // frame_step
-            energy[index] = chain.energy()
-            magnetization[index] = np.mean(chain.spins)
+    random_times = chain.set_random_times()
+    sorted_indexes = chain.find_time_sequence()
+    time = 0
+    while time <= length:
+        for index in sorted_indexes:
+            time += random_times[index]
+            chain.continuous_advance(index)
+            if time % frame_step == 0:
+                energy.append(chain.energy())
+                magnetization.append(np.mean(chain.spins))
+        random_times = chain.set_random_times()
+        sorted_indexes = chain.find_time_sequence()
 
+    energy = np.array(energy)
+    magnetization = np.array(magnetization)
     bundle = chain.export_dict()
     bundle['energy_sample'] = energy.tolist()
     bundle['magnetization_sample'] = magnetization.tolist()
-    bundle['frame_step'] = frame_step
     with open(output, 'w') as file:
         json.dump(bundle, file)
     print(f"Simulations saved to {output}")
+
 
 ### Execute main script
 

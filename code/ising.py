@@ -64,6 +64,7 @@ class Chain:
         """Return energy cost of flipping a given spin"""
         return 2 * self.spins[i] * (self.field + self.coupling * (self.spins[(i - 1) % len(self.spins)] +
                                                                   self.spins[(i + 1) % len(self.spins)]))
+
     def typical_delta(self, size=100):
         """Sample typical energy difference"""
         backup = self.spins
@@ -157,8 +158,83 @@ class DynamicChain(Chain):
         return self.spins
 
 
-class Metropolis(Chain):
+class ContinuousDynamic(DynamicChain):
+    """An extension of the Ising chain for continuous time stochastic simulations
+            """
 
+    def __init__(self, coupling=1.0, temperature=1.0, field=0., **kwargs):
+        """Overriden constructor with additional arguments
+
+                      Args:
+                          ...
+
+                          random_times (array_like): An array of shape `(N, 1)` for `N` spin
+                          sorted_indexes (array_like): An array of shape `(N, 1)` for `N` spin
+                      """
+
+        random_times = (
+            kwargs.pop('random_times') if 'random_times' in kwargs
+            else None
+        )
+
+        sorted_indexes = (
+            kwargs.pop('sorted_indexes') if 'sorted_indexes' in kwargs
+            else None
+        )
+
+        super().__init__(coupling, temperature, field, **kwargs)
+
+        self.random_times = (
+            np.full_like(self.spins, 0) if random_times is None
+            else np.asarray(random_times)
+        )  # define the variable random_times
+        assert len(self.random_times) == len(self.spins)
+
+        self.sorted_indexes = (
+            np.full_like(self.spins, 0) if sorted_indexes is None
+            else np.asarray(sorted_indexes)
+        )  # define the variable sorted_indexes
+        assert len(self.sorted_indexes) == len(self.spins)
+
+    def set_random_times(self):
+        """
+        Return the random_times array with the random dt for each spin, given the present configuration
+        and the present time
+        """
+        for spin in range(len(self.spins)):
+            u = np.random.random()
+            value = self.spins[spin]
+            self.random_times[spin] = np.log(1 / u) / self.action_rate(spin, value)
+        return self.random_times
+
+    def find_time_sequence(self):
+        """
+        Return the array sorted_indexes that say which spin is gonna flip first, given a single set of random_times
+        """
+        times = np.copy(self.random_times)
+        max_time = max(times)
+        for step in range(len(times)):
+            index = np.argmin(times)
+            self.sorted_indexes[step] = index
+            times[index] = max_time + 1
+        return self.sorted_indexes
+
+    def continuous_advance(self, spin_to_change):
+        """
+        Return the new configuration after the spin is flipped
+        """
+        dE = self.deltaE(spin_to_change)
+        value = self.spins[spin_to_change]
+        action_rates_ratio = self.action_rate(spin_to_change, -value) / self.action_rate(spin_to_change, value)
+        weight = np.exp(-dE / self.temperature) * action_rates_ratio
+        prob_change = self.action_rate(spin_to_change, value) * weight / (1 + weight)
+        rank = np.random.random()
+        if prob_change > rank:
+            self.spins[spin_to_change] *= -1
+        return self.spins
+
+
+class Metropolis(Chain):
     def __init__(self, coupling=1.0, temperature=1.0, field=0., **kwargs):
         super().__init__(coupling, temperature, field, **kwargs)
 
@@ -220,13 +296,13 @@ def theoretical_distributions(chain: Chain):
 
         e = chain.energy()
         weight = np.exp(-e / chain.temperature)
-        if e in eng: # accumulate energy weights
+        if e in eng:  # accumulate energy weights
             eng[e] += weight
         else:
             eng[e] = weight
 
         m = np.sum(chain.spins)
-        if m in mgn: # accumulate magnetization weights
+        if m in mgn:  # accumulate magnetization weights
             mgn[m] += weight
         else:
             mgn[m] = weight
@@ -337,23 +413,22 @@ def theoretical_test(f_obs, theory_prob, n_samples, eps):
                     - upper bound
                     - reject: if True the two distribution are the same, False the two dristibution are not the same
     """
-    prob_sample = np.array([i/n_samples for i in f_obs])
+    prob_sample = np.array([i / n_samples for i in f_obs])
     dist_sample = 0
     var1 = 0
     var2 = 0
     for i in range(len(theory_prob)):
-        dist_sample += (prob_sample[i] - theory_prob[i])**2
-        var1 += (prob_sample[i] - theory_prob[i])**2 * prob_sample[i]
+        dist_sample += (prob_sample[i] - theory_prob[i]) ** 2
+        var1 += (prob_sample[i] - theory_prob[i]) ** 2 * prob_sample[i]
     for i in range(len(theory_prob)):
         for j in range(len(theory_prob)):
-            var2 += (prob_sample[i] - theory_prob[i]) * (prob_sample[j] - theory_prob[j]) * prob_sample[i] * prob_sample[j]
-    std = np.sqrt((4 * (var1 - var2))/n_samples)
+            var2 += (prob_sample[i] - theory_prob[i]) * (prob_sample[j] - theory_prob[j]) * prob_sample[i] * \
+                    prob_sample[j]
+    std = np.sqrt((4 * (var1 - var2)) / n_samples)
     alpha = 0.05
-    upper_bound = eps**2 - scipy.stats.norm.ppf(1 - alpha)*std
-    reject = False
-    if dist_sample < upper_bound:
-        reject = True
-    results = {"Distance": dist_sample, "Upper_bound": upper_bound, "Reject": reject}
+    upper_bound = eps ** 2 - scipy.stats.norm.ppf(1 - alpha) * std
+    pvalue = scipy.stats.norm.sf(x=upper_bound, scale=std)  # the test in one tailed h0: P(distance >= upperbound)
+    results = {"Distance": dist_sample, "Upper_bound": upper_bound, "pvalue": pvalue}
     return results
 
 
@@ -364,13 +439,13 @@ def z_test(f1, f2, n_samples):
     :param n_samples:
     :return: p-value of z-test
     """
-    prob_sample1 = np.array([i/n_samples for i in f1])
+    prob_sample1 = np.array([i / n_samples for i in f1])
     prob_sample2 = np.array([i / n_samples for i in f2])
     diff_rv = 0
     for i in range(len(f1)):
         diff_rv += prob_sample1[i] - prob_sample2[i]
-    std = np.sqrt(np.var(prob_sample1)/n_samples + np.var(prob_sample2)/n_samples)
-    return 2*scipy.stats.norm.sf(x=abs(diff_rv), loc=0, scale=std)
+    std = np.sqrt(np.var(prob_sample1) / n_samples + np.var(prob_sample2) / n_samples)
+    return 2 * scipy.stats.norm.sf(x=abs(diff_rv), loc=0, scale=std)
 
 
 def equilibrate_counts(dict_a, dict_b):
