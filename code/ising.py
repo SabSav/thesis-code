@@ -443,7 +443,7 @@ def z_test(f1, f2, n_samples):
     prob_sample2 = np.array([i / n_samples for i in f2])
     diff_rv = 0
     for i in range(len(f1)):
-        diff_rv += prob_sample1[i] - prob_sample2[i]
+        diff_rv += (prob_sample1[i] - prob_sample2[i])**2
     std = np.sqrt(np.var(prob_sample1) / n_samples + np.var(prob_sample2) / n_samples)
     return 2 * scipy.stats.norm.sf(x=abs(diff_rv), loc=0, scale=std)
 
