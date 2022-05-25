@@ -3,6 +3,7 @@ import numpy as np
 import scipy as sp
 import scipy.stats
 
+
 def chi_squared_stat(counts1, counts2):
     """Two-samples chi-squared statistics"""
     num = len(counts1)
@@ -13,19 +14,22 @@ def chi_squared_stat(counts1, counts2):
 
     f1 = np.sqrt(tot2 / tot1)
     f2 = 1 / f1
-
+    df = len(counts1) - 1
     chi2 = 0.0
     for i in range(num):
-        if plus[i] > 0:
-            chi2 += (f1 * counts1[i] - f2 * counts2[i])**2 / plus[i]
-    return chi2
+        if plus[i] == 0:  # no counts mean one less degree of freedom (book - numPress)
+            df -= 1
+        else:
+            chi2 += (f1 * counts1[i] - f2 * counts2[i]) ** 2 / plus[i]
+    return df, chi2
+
 
 def chi_squared_test(counts1, counts2):
     """Apply two-samples chi-squared test"""
-    return sp.special.gammaincc(
-        (len(counts1) - 1) / 2,
-        chi_squared_stat(counts1, counts2) / 2
-    )
+    return sp.special.gammaincc(chi_squared_stat(counts1, counts2)[0] / 2,
+                                chi_squared_stat(counts1, counts2)[1] / 2
+                                )
+
 
 def chi_squared_permutation_test(counts1, counts2, size):
     """Chi-squared permutation test with two samples from a multinomial

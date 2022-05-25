@@ -112,9 +112,16 @@ class DynamicChain(Chain):
 
                    action_rates (array_like): An array of shape `(N, 2)` for `N` spin
                        values `-1` and `1`
+
+                    dt (float_number): interval of the dynamic
                """
         action_rates = (
             kwargs.pop('action_rates') if 'action_rates' in kwargs
+            else None
+        )
+
+        dt = (
+            kwargs.pop('dt') if 'dt' in kwargs
             else None
         )
 
@@ -127,6 +134,10 @@ class DynamicChain(Chain):
         assert self.action_rates.shape == (len(self.spins), 2)
 
         self._buffer = np.empty_like(self.spins)
+
+        self.dt = (
+            0.1 if dt is None else np.float(dt)
+        )
 
     def action_rate(self, i, value):
         """Return action rate for a given value of an `i`th spin (I need it for the step in Alg1)"""
@@ -149,7 +160,7 @@ class DynamicChain(Chain):
             value = self.spins[spin_to_change]
             action_rates_ratio = self.action_rate(spin_to_change, -value) / self.action_rate(spin_to_change, value)
             weight = np.exp(-dE / self.temperature) * action_rates_ratio
-            prob_change = self.action_rate(spin_to_change, value) * weight / (1 + weight)
+            prob_change = self.dt * self.action_rate(spin_to_change, value) * weight / (1 + weight)
 
             rank = np.random.random()
             if prob_change > rank:

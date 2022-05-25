@@ -28,6 +28,7 @@ def test_DynamicChain():
     assert chain.action_rate(1, 1) == 1.0
     assert chain.action_rate(1, -1) == 1.0
 
+
 def test_theoretical_distributions():
     """Test `theoretical_distributions()`"""
     eng, mgn = theoretical_distributions(Chain())
@@ -43,6 +44,12 @@ def test_theoretical_distributions():
 
     assert eng[0, 1] == approx(0.948, abs=0.005)
     assert eng[1, 1] == approx(0.052, abs=0.005)
+
+    assert mgn[0, 1] == approx(0.473, abs=0.005)
+    assert mgn[1, 1] == approx(0.026, abs=0.005)
+    assert mgn[2, 1] == approx(0.026, abs=0.005)
+    assert mgn[3, 1] == approx(0.473, abs=0.005)
+
 
 def test_typical_delta():
     chain = Chain(coupling=1, spins=[1, 1, 1])
