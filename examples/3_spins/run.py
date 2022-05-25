@@ -1,5 +1,5 @@
 """Testing MC and A1 with three spins"""
-import sys, os
+import sys, os, argparse
 import numpy as np
 import datetime
 
@@ -23,50 +23,36 @@ J = 1
 #     for i in range(size)
 # ])
 action_rates = np.array([
-    2 * [0.5] for i in range(size)
+    2 * [0.9] for i in range(size)
 ])
 
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
+cases = [
+    {'method': mc, 'label': 'Low-temperature sample from an MC simulation',
+        'size': size, 'temperature': lT, 'field': h, 'coupling': J,
+        'burn_in': 10000, 'length': 1000000, 'frame_step': 10,
+        'output': f'{dir_path}/mc-lT.json'},
+    {'method': mc, 'label': 'High-temperature sample from an MC simulation',
+        'size': size, 'temperature': hT, 'field': h, 'coupling': J,
+        'burn_in': 10000, 'length': 1000000, 'frame_step': 10,
+        'output': f'{dir_path}/mc-hT.json'
+    },
+    {'method': alg1, 'label': 'Low-temperature sample from an A1 simulation',
+        'size': size, 'temperature': lT, 'field': h, 'coupling': J,
+        'action_rates': action_rates,
+        'burn_in': 10000, 'length': 1000000, 'frame_step': 10,
+        'output': f'{dir_path}/a1-lT.json'
+    },
+    {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
+        'size': size, 'temperature': hT, 'field': h, 'coupling': J,
+        'action_rates': action_rates,
+        'burn_in': 10000, 'length': 1000000, 'frame_step': 10,
+        'output': f'{dir_path}/a1-hT.json'
+    }
+]
 
-def case_lt_mc_with_correlations():
-    """Produce correlated samples of MC simulation at `T = 0.5`"""
-    mc(
-        size=size, temperature=lT, field=h, coupling=J,
-        burn_in=4000, length=100000, frame_step=1,
-        output=f'{dir_path}/mc-lT.json'  # low T mc
-    )
-
-
-def case_lt_alg1_without_correlations():
-    """Produce decorrelated samples of alg1 simulation at `T = 0.5`"""
-
-    alg1(
-        size=size, temperature=lT, field=h, coupling=J,
-        action_rates=action_rates,
-        burn_in=100000, length=10000000, frame_step=100,
-        output=f'{dir_path}/a1-lT.json'  # low T algorithm 1
-    )
-
-
-def case_ht_mc_with_correlations():
-    """Produce correlated samples of MC simulation at `T = 10`"""
-    mc(
-        size=size, temperature=hT, field=h, coupling=J,
-        burn_in=4000, length=100000, frame_step=1,
-        output=f'{dir_path}/mc-hT.json'  # low T mc
-    )
-
-
-def case_ht_alg1_without_correlations():
-    """Produce decorrelated samples of alg1 simulation at `T = 10`"""
-    alg1(
-        size=size, temperature=hT, field=h, coupling=J,
-        action_rates=action_rates,
-        burn_in=100000, length=10000000, frame_step=100,
-        output=f'{dir_path}/a1-hT.json'  # low T algorithm 1
-    )
 
 # def case_hT_with_correlations():
 #     """Produce correlated samples of MC simulation at `T = 0.5`"""
@@ -103,9 +89,18 @@ def case_ht_alg1_without_correlations():
 #         output=f'{dir_path}/a1-lT-decor.json'  # low T algorithm 1
 #     )
 
-
 if __name__ == '__main__':
-    case_lt_mc_with_correlations()
-    case_ht_mc_with_correlations()
-    case_lt_alg1_without_correlations()
-    case_ht_alg1_without_correlations()
+    # Prepare arguments
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '-i', dest='cases', type=str, default=':',
+        help="Case indices (default: ':')"
+    )
+    args = parser.parse_args()
+
+    for case in eval(f'cases[{args.cases}]'):
+        kwargs = case.copy()
+        method = kwargs.pop('method')
+        print(kwargs.pop('label'))
+        method(**kwargs)
+        print()
