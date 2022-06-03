@@ -15,13 +15,14 @@ def chi_squared_stat(counts1, counts2):
     f1 = np.sqrt(tot2 / tot1)
     f2 = 1 / f1
     df = len(counts1) - 1
-    chi2 = 0.0
+    stat = 0.0
     for i in range(num):
         if plus[i] == 0:  # no counts mean one less degree of freedom (book - numPress)
             df -= 1
         else:
-            chi2 += (f1 * counts1[i] - f2 * counts2[i]) ** 2 / plus[i]
-    return df, chi2
+            stat += (f1 * counts1[i] - f2 * counts2[i]) ** 2 / plus[i]
+
+    return sp.gammaincc(df / 2, stat/2)
 
 
 def chi_squared_test(counts1, counts2):

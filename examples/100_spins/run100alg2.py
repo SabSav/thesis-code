@@ -1,14 +1,14 @@
 """Testing Alg2 with three spins"""
 import sys, os
 import numpy as np
-
+import argparse
 # Add code directory to the python path
 sys.path.append('code')
 from alg2 import simulate as alg2
 
 size = 100
 lT = 0.5
-hT = 10
+hT = 3
 h = 0
 J = 1
 
@@ -19,29 +19,36 @@ action_rates = np.array([
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-
-def case_lt_without_correlations():
-    """Produce decorrelated samples of alg2 simulation at `T = 0.5`"""
-    alg2(
-        size=size, temperature=lT, field=h, coupling=J,
-        action_rates=action_rates,
-        burn_in=1000, length=1000000, frame_step=100,
-        output=f'{dir_path}/a2-lT.json'  # low T algorithm 1
-    )
-
-
-def case_ht_with_correlations():
-    """Produce correlated samples alg2 simulation at `T = 0.5`"""
-    alg2(
-        size=size, temperature=hT, field=h, coupling=J,
-        action_rates=action_rates,
-        burn_in=10, length=10000, frame_step=1,
-        output=f'{dir_path}/a2-hT.json'  # low T algorithm 1
-    )
-
+cases = [
+    {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',
+     'size': size, 'temperature': lT, 'field': h, 'coupling': J,
+     'action_rates': action_rates,
+     'burn_in': 1000, 'length': 1000000, 'frame_step': 100,
+     'output': f'{dir_path}/a2-lT.json'
+     },
+    {'method': alg2, 'label': 'High-temperature sample from an A2 simulation',
+     'size': size, 'temperature': hT, 'field': h, 'coupling': J,
+     'action_rates': action_rates,
+     'burn_in': 1000, 'length': 1000000, 'frame_step': 100,
+     'output': f'{dir_path}/a2-hT.json'
+     }
+]
 
 if __name__ == '__main__':
+    # Prepare arguments
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '-i', dest='cases', type=str, default=':',
+        help="Case indices (default: ':')"
+    )
+    args = parser.parse_args()
 
-    case_lt_without_correlations()
-    case_ht_with_correlations()
+    for case in eval(f'cases[{args.cases}]'):
+        kwargs = case.copy()
+        method = kwargs.pop('method')
+        print(kwargs.pop('label'))
+        method(**kwargs)
+        print()
+
+
 

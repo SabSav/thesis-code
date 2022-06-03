@@ -10,6 +10,7 @@ from scipy import stats
 from tqdm import tqdm
 
 
+
 class Chain:
     """One dimensional Ising model
 
@@ -188,60 +189,43 @@ class ContinuousDynamic(DynamicChain):
             else None
         )
 
-        sorted_indexes = (
-            kwargs.pop('sorted_indexes') if 'sorted_indexes' in kwargs
-            else None
-        )
-
         super().__init__(coupling, temperature, field, **kwargs)
-
+        np.random.seed(1)
         self.random_times = (
-            np.full_like(self.spins, 0) if random_times is None
-            else np.asarray(random_times)
-        )  # define the variable random_times
-        assert len(self.random_times) == len(self.spins)
+            np.empty(len(self.spins)) if random_times is None else np.float(random_times)
+        )  # define the variable random times
 
-        self.sorted_indexes = (
-            np.full_like(self.spins, 0) if sorted_indexes is None
-            else np.asarray(sorted_indexes)
-        )  # define the variable sorted_indexes
-        assert len(self.sorted_indexes) == len(self.spins)
-
-    def set_random_times(self):
+    def set_random_times(self, spin):
         """
-        Return the random_times array with the random dt for each spin, given the present configuration
-        and the present time
+        Return the random_times array, given the present configuration
         """
-        for spin in range(len(self.spins)):
-            u = np.random.random()
-            value = self.spins[spin]
-            self.random_times[spin] = np.log(1 / u) / self.action_rate(spin, value)
+        u = np.random.random()
+        value = self.spins[spin]
+        self.random_times[spin] = np.log(1 / u) / self.action_rate(spin, value)
         return self.random_times
 
-    def find_time_sequence(self):
+    def continuous_advance(self):
         """
-        Return the array sorted_indexes that say which spin is gonna flip first, given a single set of random_times
+        Return the new configuration
         """
-        times = np.copy(self.random_times)
-        max_time = max(times)
-        for step in range(len(times)):
-            index = np.argmin(times)
-            self.sorted_indexes[step] = index
-            times[index] = max_time + 1
-        return self.sorted_indexes
+        internal_time = 0
+        while internal_time <= 1:
+            spin_to_change = np.argmin(self.random_times)
+            if internal_time + self.random_times[spin_to_change] > 1:
+                time_left = 1 - internal_time
+                self.random_times -= time_left
+                internal_time += self.random_times[spin_to_change]  # to exit from the cycle
+            else:
+                internal_time += self.random_times[spin_to_change]
+                self.random_times -= self.random_times[spin_to_change]
+                self.set_random_times(spin_to_change)
 
-    def continuous_advance(self, spin_to_change):
-        """
-        Return the new configuration after the spin is flipped
-        """
-        dE = self.deltaE(spin_to_change)
-        value = self.spins[spin_to_change]
-        action_rates_ratio = self.action_rate(spin_to_change, -value) / self.action_rate(spin_to_change, value)
-        weight = np.exp(-dE / self.temperature) * action_rates_ratio
-        prob_change = self.action_rate(spin_to_change, value) * weight / (1 + weight)
-        rank = np.random.random()
-        if prob_change > rank:
-            self.spins[spin_to_change] *= -1
+                dE = self.deltaE(spin_to_change)
+                weight = np.exp(-dE / self.temperature)
+                prob_change = weight / (1 + weight)
+                rank = np.random.random()
+                if prob_change > rank:
+                    self.spins[spin_to_change] *= -1
         return self.spins
 
 
@@ -293,8 +277,8 @@ def theoretical_distributions(chain: Chain):
 
         (float, (n, 2)): `n` magnetization states with values in the first
             column and their probabilities in the second (sorted by values)
+    
     """
-
     size = len(chain.spins)
     eng = {}  # Energy levels with their weights
     mgn = {}  # Magnetization values (not mean) with their wights
@@ -341,7 +325,7 @@ def theoretical_quantities(n_samples, quantity):
             (float, 1D-array): counts per theoretical quantity level
             (float): multinomial average
             (float): multinomial standard deviation
-        """
+    """
     theory_quantity_counts = [quantity[i, 1] * n_samples for i in range(len(quantity))]
 
     binom_average = np.empty(len(quantity))
@@ -354,21 +338,21 @@ def theoretical_quantities(n_samples, quantity):
     return theory_quantity_counts, binom_average, binom_std
 
 
-def std_algorithms(counts, theory_avg, theory_quantity_counts, theory_std):
+def std_algorithms(counts, theory_avg, theory_quantity_levels, theory_std):
     """Calculate the std for the two algorithms for the barchart (used when N.spins <= 4)
         Args:
-            counts: counts per quantity level generating by the algorithm
-            theory_avg: binomial avg
-            theory_engy: theoritical counts per quantity level
-            theory_std: binomial std
+            counts (dict): counts per quantity level generating by the algorithm
+            theory_avg (1d- array): theoretical average
+            theory_quantity_levels (2d-array): theoretical levels - theoretical counts
+            theory_std (1d-array): theoretical std
 
         Returns: multiplicity: integer value that multiply the theory_std
                  std: actual std of the algorithms for each bar
                  counts: dictionary with the counts per energy level
+    
     """
-
     quantity_level = defaultdict(int)
-    keys = theory_quantity_counts[:, 0]
+    keys = theory_quantity_levels[:,0]
 
     for k in zip(keys):
         quantity_level[k] = 0
@@ -443,22 +427,6 @@ def theoretical_test(f_obs, theory_prob, n_samples, eps):
     return results
 
 
-def z_test(f1, f2, n_samples):
-    """Z-test for the counts of the two algorithms. It assumes independence in the samples (articles)
-    :param f1: counts per quantity level of the first algorithm
-    :param f2: counts per quantity level of the second algorithm
-    :param n_samples:
-    :return: p-value of z-test
-    """
-    prob_sample1 = np.array([i / n_samples for i in f1])
-    prob_sample2 = np.array([i / n_samples for i in f2])
-    diff_rv = 0
-    for i in range(len(f1)):
-        diff_rv += (prob_sample1[i] - prob_sample2[i])**2
-    std = np.sqrt(np.var(prob_sample1) / n_samples + np.var(prob_sample2) / n_samples)
-    return 2 * scipy.stats.norm.sf(x=abs(diff_rv), loc=0, scale=std)
-
-
 def equilibrate_counts(dict_a, dict_b):
     total_keys = np.unique(list(dict_a.keys()) + list(dict_b.keys()))
     for key in total_keys:
@@ -483,6 +451,7 @@ def hist(chain: Chain, vector_values, engy_flag):
 
         Returns: dictionary with the counts per energy levels/ magnetization values
     """
+
     if engy_flag:
         bin_centers = sorted([value - 2 * abs(chain.coupling) for value in vector_values])
         bin_centers = [value + 4 * abs(chain.coupling) for value in bin_centers]

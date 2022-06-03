@@ -51,7 +51,7 @@ def one_sample_chi_squared(probabilities, counts):
         probabilities (numpy array of floats): theoretical probabilities for categories
         counts (numpy array of integers): Sample of categories' counts
     Returns:
-        P-value for the hypothesis that the sample comes from a given multinomial
+        P-value fr the hypothesis that the sample comes from a given multinomial
             distribution
     """
     tot = np.sum(counts)
@@ -62,7 +62,7 @@ def one_sample_chi_squared(probabilities, counts):
         if est[i] == 0 and counts[i] == 0:  # no counts mean one less degree of freedom
             df -= 1
     stat = np.sum((counts - est) ** 2 / est)
-    return sp.special.gammaincc(df / 2, stat / 2)  # and here do not divide ratio by 2
+    return sp.special.gammaincc(df / 2, stat / 2)
 
 
 def two_samples_test(sample1, sample2):

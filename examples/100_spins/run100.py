@@ -11,7 +11,7 @@ from alg1 import simulate as alg1
 
 size = 100
 lT = 0.5
-hT = 10
+hT = 3
 h = 0
 J = 1
 # action_rates = np.empty((size, 2))
@@ -24,8 +24,8 @@ action_rates = np.array([
     for i in range(size)
 ])
 
-dt_lT = 0.05
-dt_hT = 0.05
+dt_lT = 0.1
+dt_hT = 0.01
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -43,50 +43,20 @@ cases = [
     {'method': alg1, 'label': 'Low-temperature sample from an A1 simulation',
         'size': size, 'temperature': lT, 'field': h, 'coupling': J,
         'action_rates': action_rates, 'dt': dt_lT,
-        'burn_in': 1000, 'length': 1000000, 'frame_step': 100,
+        'burn_in': 1000, 'length': 10000000, 'frame_step': 1000,
         'output': f'{dir_path}/a1-lT.json'
     },
     {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
         'size': size, 'temperature': hT, 'field': h, 'coupling': J,
         'action_rates': action_rates, 'dt': dt_hT,
-        'burn_in': 1000, 'length': 1000000, 'frame_step': 100,
+        'burn_in': 1000, 'length': 100000000, 'frame_step': 10000,
         'output': f'{dir_path}/a1-hT.json'
     }
 ]
 
-"""
-
-def case_lt_without_correlations():
-    Produce decorrelated samples of MC and alg1 simulation at `T = 0.5`
-    mc(
-        size=size, temperature=lT, field=h, coupling=J,
-        burn_in=1000, length=1000000, frame_step=100,
-        output=f'{dir_path}/mc-lT.json'  # low T mc
-    )
-    alg1(
-        size=size, temperature=lT, field=h, coupling=J,
-        action_rates=action_rates,
-        burn_in=1000, length=1000000, frame_step=100,
-        output=f'{dir_path}/a1-lT.json'  # low T algorithm 1
-    )
-
-
-def case_ht_with_correlations():
-    Produce correlated samples of MC and alg1 simulation at `T = 0.5`
-    mc(
-        size=size, temperature=hT, field=h, coupling=J,
-        burn_in=10, length=10000, frame_step=1,
-        output=f'{dir_path}/mc-hT.json'  # low T mc
-    )
-    alg1(
-        size=size, temperature=hT, field=h, coupling=J,
-        action_rates=action_rates,
-        burn_in=10, length=10000, frame_step=1,
-        output=f'{dir_path}/a1-hT.json'  # low T algorithm 1
-    )
-"""
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '-i', dest='cases', type=str, default=':',
@@ -100,3 +70,4 @@ if __name__ == '__main__':
         print(kwargs.pop('label'))
         method(**kwargs)
         print()
+
