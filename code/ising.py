@@ -213,14 +213,10 @@ class ContinuousDynamic(DynamicChain):
         """
         Return the new configuration
         """
-        internal_time = 0
-        while internal_time <= 1:
+        internal_time = 0 # RB: must go from 0 to 1*dt
+        while True:
             spin_to_change = np.argmin(self.random_times)
-            if internal_time + self.random_times[spin_to_change] > 1:
-                time_left = 1 - internal_time
-                self.random_times -= time_left
-                internal_time += self.random_times[spin_to_change]  # to exit from the cycle
-            else:
+            if internal_time + self.random_times[spin_to_change] < self.dt:
                 internal_time += self.random_times[spin_to_change]
                 self.random_times -= self.random_times[spin_to_change]
                 self.set_random_times(spin_to_change)
@@ -228,9 +224,12 @@ class ContinuousDynamic(DynamicChain):
                 dE = self.deltaE(spin_to_change)
                 weight = np.exp(-dE / self.temperature)
                 prob_change = weight / (1 + weight)
-                rank = np.random.random()
-                if prob_change > rank:
+                if prob_change > np.random.random():
                     self.spins[spin_to_change] *= -1
+                continue
+
+            self.random_times -= self.dt - internal_time
+            break
         return self.spins
 
 
