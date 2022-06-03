@@ -183,17 +183,22 @@ class ContinuousDynamic(DynamicChain):
                           random_times (array_like): An array of shape `(N, 1)` for `N` spin
                           sorted_indexes (array_like): An array of shape `(N, 1)` for `N` spin
                       """
-
-        random_times = (
-            kwargs.pop('random_times') if 'random_times' in kwargs
-            else None
-        )
+        # If kwwargs contains `'random_times'`, then `super().__init__` will fail
+        if 'random_times' in kwargs:
+            self.random_times = np.float(kwargs.pop('random_times'))
 
         super().__init__(coupling, temperature, field, **kwargs)
-        np.random.seed(1)
-        self.random_times = (
-            np.empty(len(self.spins)) if random_times is None else np.float(random_times)
-        )  # define the variable random times
+        if 'random_times' not in self.__dict_:
+            self.random_times = np.log(
+                1 / np.random.random(size=len(self.spins))
+            ) / [
+                self.action_rate(spin, self.spins[spin])
+                for spin in range(len(self.spins))
+            ]
+        else:
+            assert len(self.random_times) == len(self.spins)
+
+        # set_random_times
 
     def set_random_times(self, spin):
         """
@@ -277,7 +282,7 @@ def theoretical_distributions(chain: Chain):
 
         (float, (n, 2)): `n` magnetization states with values in the first
             column and their probabilities in the second (sorted by values)
-    
+
     """
     size = len(chain.spins)
     eng = {}  # Energy levels with their weights
@@ -349,7 +354,7 @@ def std_algorithms(counts, theory_avg, theory_quantity_levels, theory_std):
         Returns: multiplicity: integer value that multiply the theory_std
                  std: actual std of the algorithms for each bar
                  counts: dictionary with the counts per energy level
-    
+
     """
     quantity_level = defaultdict(int)
     keys = theory_quantity_levels[:,0]
