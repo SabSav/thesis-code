@@ -82,25 +82,21 @@ def two_samples_test(sample1, sample2):
     tot1 = np.sum(sample1)
     tot2 = np.sum(sample2)
     sample_tot = sample1 + sample2  # merge the two sample
-    # Set 1 for absent counts, for their contribution will be ignored
-    probabilities = np.array(
-        [(count if count > 0 else 1) for count in sample_tot]
-    ) / (tot1 + tot2)
+    sample1 = np.array([i for i in sample1 if i!=0]) #delete the zero counts
+    sample2 = np.array([i for i in sample2 if i!=0]) #delete the zero counts
+    sample_tot = np.array([i for i in sample_tot if i!=0]) #delete the zero counts: i'll do here and not before because
+    #is easerier for the pairwise sum
+    class_sample1 = len(sample1)
+    class_sample2 = len(sample2)
+    class_sample_tot = len(sample_tot)
 
     if tot1 != tot2:
-        stat = - tot1 * np.log(1 + tot2 / tot1) - tot2 * np.log(1 + tot1 / tot2)
+        stat = np.log(1 / tot1 + 1 / tot2)
     else:
-        stat = - 2 * tot1 * np.log(2)
-    est1 = np.array([(count if count > 0 else 1) for count in sample1]) / tot1
-    est2 = np.array([(count if count > 0 else 1) for count in sample2]) / tot2
-    stat -= np.dot(sample1, np.log(probabilities / est1)) + np.dot(sample2, np.log(probabilities / est2))
-    sample1_correct = np.array([(count if count > 0 else 1) for count in sample1])
-    sample2_correct = np.array([(count if count > 0 else 1) for count in sample2])
-    stat += np.dot(sample1, np.log(1 + sample2 / sample1_correct)) + np.dot(sample2, np.log(1 +
-                                                                                            sample1 / sample2_correct))
-    num = len(sample1)
-    stat /= 1 + (
-            np.sum(1.0 / probabilities) - 1
-    ) / (6 * (tot1 + tot2) * (num - 1))  # Williams' correction
+        stat = np.log(2 / tot1)
 
-    return sp.special.gammaincc((num - 1) / 2, stat)
+    stat += (class_sample1 + class_sample2 - class_sample_tot - 1) * np.log(2 * np.pi)
+    stat += np.sum(np.log(sample1)) + np.sum(np.log(sample2)) - np.sum(np.log(sample_tot))
+    stat = stat / 2
+
+    return sp.special.gammaincc((class_sample_tot - 1) / 2, stat / 2)

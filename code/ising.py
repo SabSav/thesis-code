@@ -10,7 +10,6 @@ from scipy import stats
 from tqdm import tqdm
 
 
-
 class Chain:
     """One dimensional Ising model
 
@@ -71,13 +70,15 @@ class Chain:
         backup = self.spins
 
         sample = []
+        dM = []
         for _ in range(size):
             self.spins = 2 * np.random.randint(2, size=size) - 1
             dE = abs(self.deltaE(np.random.randint(len(self.spins))))
             if dE > 0: sample.append(dE)
+            dM.append(np.mean(self.spins))
 
         self.spins = backup
-        return np.mean(sample)
+        return np.mean(sample), abs(np.mean(dM))
 
     def energy(self):
         """Return the chain energy"""
@@ -183,17 +184,17 @@ class ContinuousDynamic(DynamicChain):
                           random_times (array_like): An array of shape `(N, 1)` for `N` spin
                           sorted_indexes (array_like): An array of shape `(N, 1)` for `N` spin
                       """
-
+        # If kwwargs contains `'random_times'`, then `super().__init__` will fail
         random_times = (
             kwargs.pop('random_times') if 'random_times' in kwargs
             else None
         )
 
         super().__init__(coupling, temperature, field, **kwargs)
-        np.random.seed(1)
         self.random_times = (
-            np.empty(len(self.spins)) if random_times is None else np.float(random_times)
-        )  # define the variable random times
+            np.empty(len(self.spins)) if random_times is None
+            else np.asarray(random_times)
+        )  # define the variable action rate
 
     def set_random_times(self, spin):
         """
@@ -204,28 +205,25 @@ class ContinuousDynamic(DynamicChain):
         self.random_times[spin] = np.log(1 / u) / self.action_rate(spin, value)
         return self.random_times
 
-    def continuous_advance(self):
+    def advance(self):
         """
         Return the new configuration
         """
         internal_time = 0
-        while internal_time <= 1:
-            spin_to_change = np.argmin(self.random_times)
-            if internal_time + self.random_times[spin_to_change] > 1:
-                time_left = 1 - internal_time
-                self.random_times -= time_left
-                internal_time += self.random_times[spin_to_change]  # to exit from the cycle
-            else:
-                internal_time += self.random_times[spin_to_change]
-                self.random_times -= self.random_times[spin_to_change]
-                self.set_random_times(spin_to_change)
+        spin_to_change = np.argmin(self.random_times)
+        while internal_time + self.random_times[spin_to_change] < self.dt:
+            internal_time += self.random_times[spin_to_change]
+            self.random_times -= self.random_times[spin_to_change]
+            self.set_random_times(spin_to_change)
+            dE = self.deltaE(spin_to_change)
+            weight = np.exp(-dE / self.temperature)
+            prob_change = weight / (1 + weight)
+            if prob_change > np.random.random():
+                self.spins[spin_to_change] *= -1
 
-                dE = self.deltaE(spin_to_change)
-                weight = np.exp(-dE / self.temperature)
-                prob_change = weight / (1 + weight)
-                rank = np.random.random()
-                if prob_change > rank:
-                    self.spins[spin_to_change] *= -1
+            spin_to_change = np.argmin(self.random_times)
+
+        self.random_times -= self.dt - internal_time
         return self.spins
 
 
@@ -352,7 +350,7 @@ def std_algorithms(counts, theory_avg, theory_quantity_levels, theory_std):
     
     """
     quantity_level = defaultdict(int)
-    keys = theory_quantity_levels[:,0]
+    keys = theory_quantity_levels[:, 0]
 
     for k in zip(keys):
         quantity_level[k] = 0

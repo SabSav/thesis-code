@@ -58,21 +58,15 @@ BaseStyle->baseStyle, FrameStyle->frameStyle, ImageSize-> Large, ChartLegends->l
 (**)
 
 
-PearsonChiSquareTest[engyMc, engyTheory]
-PearsonChiSquareTest[engyAlg1, engyTheory]
-PearsonChiSquareTest[engyAlg2, engyTheory]
 
-
-PearsonChiSquareTest[Import["mc-lT.json", "RawJSON"]["energy_sample"], Import["a1-lT.json", "RawJSON"]["energy_sample"]]
-PearsonChiSquareTest[Import["mc-lT.json", "RawJSON"]["energy_sample"], Import["a2-lT.json", "RawJSON"]["energy_sample"]]
 
 
 magnMc = Import["mc-lT.json", "RawJSON"]["magnetization_sample"];
 magnAlg1 = Import["a1-lT.json", "RawJSON"]["magnetization_sample"];
 magnAlg2 = Import["a2-lT.json", "RawJSON"]["magnetization_sample"];
-acrlMc = ListPlot[CorrelationFunction[magnMc, {20}], Filling -> Axis, PlotRange -> All, PlotLabel->"Mc"];
-acrlAlg1 = ListPlot[CorrelationFunction[magnAlg1, {20}], Filling -> Axis, PlotRange -> All, PlotStyle->Magenta, PlotLabel->"Alg1"];
-acrlAlg2 = ListPlot[CorrelationFunction[magnAlg2, {20}], Filling -> Axis, PlotRange -> All, PlotStyle->Brown, PlotLabel->"Alg2"];
+acrlMc = ListPlot[CorrelationFunction[magnMc, {1000}], Filling -> Axis, PlotRange -> All, PlotLabel->"Mc"];
+acrlAlg1 = ListPlot[CorrelationFunction[magnAlg1, {10000}], Filling -> Axis, PlotRange -> All, PlotStyle->Magenta, PlotLabel->"Alg1"];
+acrlAlg2 = ListPlot[CorrelationFunction[magnAlg2, {10000}], Filling -> Axis, PlotRange -> All, PlotStyle->Brown, PlotLabel->"Alg2"];
 GraphicsRow[{acrlMc, acrlAlg1, acrlAlg2}, ImageSize->Full]
 
 

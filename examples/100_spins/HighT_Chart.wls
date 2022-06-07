@@ -77,6 +77,3 @@ PearsonChiSquareTest[magnMc, magnAlg2]
 
 
 
-
-
-

@@ -121,3 +121,4 @@ PearsonChiSquareTest[Import["mc-hT.json", "RawJSON"]["magnetization_sample"], Im
 
 
 
+

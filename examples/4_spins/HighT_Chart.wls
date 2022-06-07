@@ -2,6 +2,16 @@
 (* ::Package:: *)
 
 SetDirectory[NotebookDirectory[]];
+engyMc = Import["mc-hT.json", "RawJSON"]["energy_sample"];
+engyAlg1 = Import["a1-hT.json", "RawJSON"]["energy_sample"];
+engyAlg2 = Import["a2-hT.json", "RawJSON"]["energy_sample"];
+acrlMc = ListPlot[CorrelationFunction[engyMc, {20}], Filling -> Axis, PlotRange -> All, PlotLabel->"Mc"];
+acrlAlg1 = ListPlot[CorrelationFunction[engyAlg1, {20}], Filling -> Axis, PlotRange -> All, PlotStyle->Magenta, PlotLabel->"Alg1"];
+acrlAlg2 = ListPlot[CorrelationFunction[engyAlg2, {20}], Filling -> Axis, PlotRange -> All, PlotStyle->Brown, PlotLabel->"Alg2"];
+GraphicsRow[{acrlMc, acrlAlg1, acrlAlg2}, ImageSize->Full]
+
+
+SetDirectory[NotebookDirectory[]];
 labels = Import["theory-hT.json", "RawJSON"]["energy_level"];
 engyMc = Sort[Tally[Import["mc-hT.json", "RawJSON"]["energy_sample"]]][[All, 2]] ;
 engyAlg1 = Sort[Tally[Import["a1-hT.json", "RawJSON"]["energy_sample"]]][[All, 2]];
@@ -48,6 +58,15 @@ PearsonChiSquareTest[engyAlg2, engyTheory]
 
 PearsonChiSquareTest[Import["mc-hT.json", "RawJSON"]["energy_sample"], Import["a1-hT.json", "RawJSON"]["energy_sample"]]
 PearsonChiSquareTest[Import["mc-hT.json", "RawJSON"]["energy_sample"], Import["a2-hT.json", "RawJSON"]["energy_sample"]]
+
+
+magnMc = Import["mc-hT.json", "RawJSON"]["magnetization_sample"];
+magnAlg1 = Import["a1-hT.json", "RawJSON"]["magnetization_sample"];
+magnAlg2 = Import["a2-hT.json", "RawJSON"]["magnetization_sample"];
+acrlMc = ListPlot[CorrelationFunction[magnMc, {20}], Filling -> Axis, PlotRange -> All, PlotLabel->"Mc"];
+acrlAlg1 = ListPlot[CorrelationFunction[magnAlg1, {20}], Filling -> Axis, PlotRange -> All, PlotStyle->Magenta, PlotLabel->"Alg1"];
+acrlAlg2 = ListPlot[CorrelationFunction[magnAlg2, {20}], Filling -> Axis, PlotRange -> All, PlotStyle->Brown, PlotLabel->"Alg2"];
+GraphicsRow[{acrlMc, acrlAlg1, acrlAlg2}, ImageSize->Full]
 
 
 labels = Import["theory-hT.json", "RawJSON"]["magnetization_level"];

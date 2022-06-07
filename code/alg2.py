@@ -28,10 +28,10 @@ def main(args):
 
     for spin in range(args.size): chain.random_times = chain.set_random_times(spin)
 
-    for _ in tqdm(range(args.burn_in), desc="Burn-in"): chain.continuous_advance()
+    for _ in tqdm(range(args.burn_in), desc="Burn-in"): chain.advance()
 
     for t in tqdm(range(args.length), desc="Simulation"):
-        chain.continuous_advance()
+        chain.advance()
         if t % args.frame_step == 0:
             index = t // args.frame_step
             energy[index] = chain.energy()
@@ -68,10 +68,10 @@ def simulate(
 
     for spin in range(size): chain.random_times = chain.set_random_times(spin)
 
-    for _ in tqdm(range(burn_in), desc="Burn-in"): chain.continuous_advance()
+    for _ in tqdm(range(burn_in), desc="Burn-in"): chain.advance()
 
     for t in tqdm(range(length), desc="Simulation"):
-        chain.continuous_advance()
+        chain.advance()
         if t % frame_step == 0:
             index = t // frame_step
             energy[index] = chain.energy()
@@ -108,6 +108,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '-AR', dest='action_rates', type=float, default=np.full((3, 2), 1),
         help="Action rates"
+    )
+    parser.add_argument(
+        '-dt', dest='dt', type=float, default=0.1,
+        help="Time interval"
     )
     parser.add_argument(
         '-l', dest='length', type=int, default=1000,

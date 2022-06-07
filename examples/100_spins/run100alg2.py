@@ -22,13 +22,13 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 cases = [
     {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
-     'action_rates': action_rates,
+     'action_rates': action_rates, 'dt': 100,
      'burn_in': 1000, 'length': 1000000, 'frame_step': 100,
      'output': f'{dir_path}/a2-lT.json'
      },
     {'method': alg2, 'label': 'High-temperature sample from an A2 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'action_rates': action_rates,
+     'action_rates': action_rates, 'dt': 100,
      'burn_in': 1000, 'length': 1000000, 'frame_step': 100,
      'output': f'{dir_path}/a2-hT.json'
      }

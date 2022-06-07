@@ -1,7 +1,7 @@
 """Two-samples statistical tests"""
 import numpy as np
-import scipy as sp
-import scipy.stats
+import scipy
+from scipy import special as sp
 
 
 def chi_squared_stat(counts1, counts2):
@@ -14,22 +14,20 @@ def chi_squared_stat(counts1, counts2):
 
     f1 = np.sqrt(tot2 / tot1)
     f2 = 1 / f1
-    df = len(counts1) - 1
-    stat = 0.0
-    for i in range(num):
-        if plus[i] == 0:  # no counts mean one less degree of freedom (book - numPress)
-            df -= 1
-        else:
-            stat += (f1 * counts1[i] - f2 * counts2[i]) ** 2 / plus[i]
 
-    return sp.gammaincc(df / 2, stat/2)
+    chi2 = 0.0
+    for i in range(num):
+        if plus[i] > 0:
+            chi2 += (f1 * counts1[i] - f2 * counts2[i])**2 / plus[i]
+    return chi2
 
 
 def chi_squared_test(counts1, counts2):
     """Apply two-samples chi-squared test"""
-    return sp.special.gammaincc(chi_squared_stat(counts1, counts2)[0] / 2,
-                                chi_squared_stat(counts1, counts2)[1] / 2
-                                )
+    return sp.gammaincc(
+        (len(counts1) - 1) / 2,
+        chi_squared_stat(counts1, counts2) / 2
+    )
 
 
 def chi_squared_permutation_test(counts1, counts2, size):
@@ -70,3 +68,4 @@ def chi_squared_permutation_test(counts1, counts2, size):
         )
         if chi2 > obs: counter += 1
     return counter / size
+
