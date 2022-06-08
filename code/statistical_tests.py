@@ -89,5 +89,41 @@ def one_sample_test(probabilities, counts):
     return sp.gammaincc((num - 1) / 2, stat)  # and here do not divide ratio by 2
 
 
+def two_samples_test(sample1, sample2):
+    """Likelihood ratio test with two samples from a multinomial distribution
+
+    The larger is the p-value of the test, the more likely that the samples come
+    from the same multinomial distribution.
+
+    Args:
+        sample1 (numpy array of floats): Sample of categories' counts
+        sample2 (numpy array of floats): Sample of categories' counts
+    Returns:
+        P-value for the hypothesis that the sample comes from a given multinomial
+            distribution
+    """
+
+    tot1 = np.sum(sample1)
+    tot2 = np.sum(sample2)
+    sample_tot = sample1 + sample2  # merge the two sample
+    sample1 = np.array([i for i in sample1 if i != 0])  # delete the zero counts
+    sample2 = np.array([i for i in sample2 if i != 0])  # delete the zero counts
+    sample_tot = np.array(
+        [i for i in sample_tot if i != 0])  # delete the zero counts: i'll do here and not before because
+    # is easier for the pairwise sum
+    class_sample1 = len(sample1)
+    class_sample2 = len(sample2)
+    class_sample_tot = len(sample_tot)
+
+    if tot1 != tot2:
+        stat = np.log(1 / tot1 + 1 / tot2)
+    else:
+        stat = np.log(2 / tot1)
+
+    stat += (class_sample1 + class_sample2 - class_sample_tot - 1) * np.log(2 * np.pi)
+    stat += np.sum(np.log(sample1)) + np.sum(np.log(sample2)) - np.sum(np.log(sample_tot))
+    stat = stat / 2
+
+    return sp.gammaincc((class_sample_tot - 1) / 2, stat / 2)
 
 
