@@ -194,7 +194,8 @@ class ContinuousDynamic(DynamicChain):
         self.random_times = (
             np.empty(len(self.spins)) if random_times is None
             else np.asarray(random_times)
-        )  # define the variable action rate
+        )
+        assert len(self.random_times) == len(self.spins)
 
     def set_random_times(self, spin):
         """
@@ -220,10 +221,10 @@ class ContinuousDynamic(DynamicChain):
             prob_change = weight / (1 + weight)
             if prob_change > np.random.random():
                 self.spins[spin_to_change] *= -1
-
-            spin_to_change = np.argmin(self.random_times)
+            spin_to_change = np.argmin(self.random_times) # updated here
 
         self.random_times -= self.dt - internal_time
+
         return self.spins
 
 
@@ -275,7 +276,7 @@ def theoretical_distributions(chain: Chain):
 
         (float, (n, 2)): `n` magnetization states with values in the first
             column and their probabilities in the second (sorted by values)
-    
+
     """
     size = len(chain.spins)
     eng = {}  # Energy levels with their weights
@@ -347,7 +348,7 @@ def std_algorithms(counts, theory_avg, theory_quantity_levels, theory_std):
         Returns: multiplicity: integer value that multiply the theory_std
                  std: actual std of the algorithms for each bar
                  counts: dictionary with the counts per energy level
-    
+
     """
     quantity_level = defaultdict(int)
     keys = theory_quantity_levels[:, 0]
