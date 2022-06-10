@@ -115,15 +115,19 @@ def two_samples_test(sample1, sample2):
     class_sample2 = len(sample2)
     class_sample_tot = len(sample_tot)
 
-    if tot1 != tot2:
-        stat = np.log(1 / tot1 + 1 / tot2)
-    else:
-        stat = np.log(2 / tot1)
+    # RB: it won't make it much faster, but makes it less clear
+    # if tot1 != tot2:
+    #     stat = np.log(1 / tot1 + 1 / tot2)
+    # else:
+    #     stat = np.log(2 / tot1)
+    stat = np.log(1 / tot1 + 1 / tot2)
 
     stat += (class_sample1 + class_sample2 - class_sample_tot - 1) * np.log(2 * np.pi)
     stat += np.sum(np.log(sample1)) + np.sum(np.log(sample2)) - np.sum(np.log(sample_tot))
-    stat = stat / 2
-
-    return sp.gammaincc((class_sample_tot - 1) / 2, stat / 2)
-
-
+    # RB: Should the stat actually be stat = - 2 (l0-l1)?
+    stat = stat / 2 # RB: Instead you are dividing it by 2 here and then...
+    return sp.gammaincc((class_sample_tot - 1) / 2, stat / 2) # RB: ... you are dividing `stat` by two also here?
+    # RB: You could also apply the Williams' correction from my code above:
+    # stat /= 1 + (
+    #         np.sum(1.0 / probabilities) - 1
+    # ) / (6 * tot * (num - 1))  # Williams' correction
