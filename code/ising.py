@@ -217,7 +217,9 @@ class ContinuousDynamic(DynamicChain):
             self.random_times -= self.random_times[spin_to_change]
             self.set_random_times(spin_to_change)
             dE = self.deltaE(spin_to_change)
-            weight = np.exp(-dE / self.temperature)
+            value = self.spins[spin_to_change]
+            action_rates_ratio = self.action_rate(spin_to_change, -value) / self.action_rate(spin_to_change, value)
+            weight = np.exp(-dE / self.temperature) * action_rates_ratio
             prob_change = weight / (1 + weight)
             if prob_change > np.random.random():
                 self.spins[spin_to_change] *= -1

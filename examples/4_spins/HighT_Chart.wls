@@ -45,10 +45,18 @@ For[i = 1, i <= Length[labels], i++,
 colors = ColorData[54];
 baseStyle = Directive[Black, FontFamily->"Arial", FontSize->16];
 frameStyle = Append[baseStyle, Thickness@0.003];
-rotateLabel[label_]:=Style[Rotate[label,Pi/4],30,Bold,Opacity[0.2],FontFamily->"Helvetica"]
+rotateLabel[label_]:=Style[Rotate[label,Pi/4],20,Bold,Opacity[0.2],FontFamily->"Helvetica"]
 BarChart[{engyMcErrors, engyAlg1Errors, engyAlg2Errors, engyTheoryErrors}, 
-ChartLabels->{Placed[{"Mc","Alg1", "Alg2", "Theory"},Center, rotateLabel],labels},
-BaseStyle->baseStyle, FrameStyle->frameStyle, ImageSize-> Large, ChartLegends->labels]
+ChartLabels->{Placed[{"MC","Discrete Dynamic", "Continuous Dynamic", "Theory"},Center, rotateLabel],labels},
+BaseStyle->baseStyle, FrameStyle->frameStyle, ImageSize-> Large, ChartLegends->labels, AxesLabel->{"Energy level", "Count per energy level"}]
+
+
+(* ::InheritFromParent:: *)
+(**)
+
+
+(* ::InheritFromParent:: *)
+(**)
 
 
 PearsonChiSquareTest[engyMc, engyTheory]
@@ -102,9 +110,9 @@ For[i = 1, i <= Length[labels], i++,
 colors = ColorData[54];
 baseStyle = Directive[Black, FontFamily->"Arial", FontSize->16];
 frameStyle = Append[baseStyle, Thickness@0.003];
-rotateLabel[label_]:=Style[Rotate[label,Pi/4],30,Bold,Opacity[0.2],FontFamily->"Helvetica"]
+rotateLabel[label_]:=Style[Rotate[label,Pi/4],20,Bold,Opacity[0.2],FontFamily->"Helvetica"]
 BarChart[{magnMcErrors, magnAlg1Errors, magnAlg2Errors, magnTheoryErrors}, 
-ChartLabels->{Placed[{"Mc","Alg1", "Alg2", "Theory"},Center, rotateLabel],labels},
+ChartLabels->{Placed[{"MC","Discrete Dynamics", "Conitnuos Dynamic", "Theory"},Center, rotateLabel],labels},
 BaseStyle->baseStyle, FrameStyle->frameStyle, ImageSize-> Large, ChartLegends->labels]
 
 
@@ -115,6 +123,12 @@ PearsonChiSquareTest[magnAlg2, magnTheory]
 
 PearsonChiSquareTest[Import["mc-hT.json", "RawJSON"]["magnetization_sample"], Import["a1-hT.json", "RawJSON"]["magnetization_sample"]]
 PearsonChiSquareTest[Import["mc-hT.json", "RawJSON"]["magnetization_sample"], Import["a2-hT.json", "RawJSON"]["magnetization_sample"]]
+
+
+
+
+
+
 
 
 

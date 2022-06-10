@@ -63,6 +63,33 @@ def two_sample_chi_squared(counts1, counts2):
     return sp.gammaincc(df / 2, stat / 2)
 
 
+def one_sample_chi_squared_multinomial(probabilities, counts, size=1000):
+    """Chi-squared resampling test with one sample from a multinomial distribution
+
+    The larger is the p-value of the test, the more likely that the sample comes
+    from a given multinomial distribution.
+
+    Args:
+        probabilities (numpy array of floats): theoretical probabilities for categories
+        counts (numpy array of integers): Sample of categories' counts
+        size: Size of the permutation sampling
+    Returns:
+        P-value for the hypothesis that the sample comes from a given multinomial
+            distribution
+    """
+    tot = np.sum(counts)
+    num = len(counts)  # number of categories
+    est = tot * probabilities
+    stat = np.sum((counts - est) ** 2 / est)
+
+    counter = 0
+    for _ in range(size):
+        smp = np.random.multinomial(tot, probabilities)
+        if np.sum((smp - est) ** 2 / est) > stat:
+            counter += 1
+    return counter / size
+
+
 def one_sample_test(probabilities, counts):
     """Likelihood ratio test with one sample from a multinomial distribution
 
@@ -125,5 +152,8 @@ def two_samples_test(sample1, sample2):
     stat = stat / 2
 
     return sp.gammaincc((class_sample_tot - 1) / 2, stat / 2)
+
+
+
 
 

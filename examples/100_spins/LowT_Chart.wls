@@ -15,17 +15,16 @@ SetDirectory[NotebookDirectory[]];
 engyMc = Import["mc-lT.json", "RawJSON"]["energy_sample"];
 engyAlg1 = Import["a1-lT.json", "RawJSON"]["energy_sample"];
 engyAlg2 = Import["a2-lT.json", "RawJSON"]["energy_sample"];
-
-mc = SmoothHistogram[engyMc, Automatic, "PDF", PlotLegends->{"MC"}];
-alg1 = SmoothHistogram[engyAlg1, Automatic, "PDF", PlotStyle->Magenta, PlotLegends->{"Alg1"}];
-alg2 = SmoothHistogram[engyAlg2, Automatic,"PDF", PlotStyle-> Brown, PlotLegends->{"Alg2"}];
-Show[mc, alg1, alg2]
-
-
-J = Import["mc-lT.json", "RawJSON"]["coupling"];
 engyMcRescaled = engyMc - Min[engyMc];
 engyAlg1Rescaled = engyAlg1 - Min[engyAlg1];
 engyAlg2Rescaled = engyAlg2 - Min[engyAlg2];
+mc = SmoothHistogram[engyMcRescaled, Automatic, "PDF", PlotLegends->{"MC"}, PlotRange->All];
+alg1 = SmoothHistogram[engyAlg1Rescaled, Automatic, "PDF", PlotStyle->Magenta, PlotLegends->{"Discrete Time Dynamic"}, PlotRange->All];
+alg2 = SmoothHistogram[engyAlg2Rescaled, Automatic,"PDF", PlotStyle-> Brown, PlotLegends->{"Continuous Time Dynamic"},PlotRange->All];
+Show[{mc, alg1, alg2}, AxesLabel->{"Energy level", "Density"}]
+
+
+J = Import["mc-lT.json", "RawJSON"]["coupling"];
 hMc = Histogram[engyMcRescaled, bspec = 4, ChartStyle->LightBlue, ChartLabels->{"Mc"}];
 hAlg1 = Histogram[engyAlg1Rescaled, bspec = 4, ChartStyle->LightMagenta, ChartLabels->{"Alg1"}];
 hAlg2 = Histogram[engyAlg2Rescaled, bspec = 4, ChartStyle->LightBrown, ChartLabels->{"Alg2"}];
@@ -73,6 +72,9 @@ GraphicsRow[{hMc, hAlg1, hAlg2}]
 based on dist. The bins are chosen to have equal probability in dist. \[RightGuillemet]*)
 PearsonChiSquareTest[magnMc, magnAlg1]
 PearsonChiSquareTest[magnMc, magnAlg2]
+
+
+
 
 
 
