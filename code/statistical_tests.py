@@ -142,18 +142,15 @@ def two_samples_test(sample1, sample2):
     class_sample2 = len(sample2)
     class_sample_tot = len(sample_tot)
 
-    if tot1 != tot2:
-        stat = np.log(1 / tot1 + 1 / tot2)
-    else:
-        stat = np.log(2 / tot1)
+    stat = np.log(1 / tot1 + 1 / tot2)
 
     stat += (class_sample1 + class_sample2 - class_sample_tot - 1) * np.log(2 * np.pi)
     stat += np.sum(np.log(sample1)) + np.sum(np.log(sample2)) - np.sum(np.log(sample_tot))
-    stat = stat / 2
+    stat /= 1 + (
+             np.sum(1.0 / (sample_tot / np.sum(sample_tot))) - 1
+     ) / (6 * np.sum(sample_tot) * (class_sample_tot - 1))  # Williams' correction
 
     return sp.gammaincc((class_sample_tot - 1) / 2, stat / 2)
-
-
 
 
 
