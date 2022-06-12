@@ -9,10 +9,11 @@ sys.path.append('code')
 from mc import simulate as mc
 from alg1 import simulate as alg1
 from alg2 import simulate as alg2
-size = 1000
+
+size = 100
 lT = 0.5
 hT = 3
-h = 0.7
+h = 0
 J = 1
 # action_rates = np.empty((size, 2))
 # action_rates[:, 0] = 0.7
@@ -43,13 +44,13 @@ cases = [
     {'method': alg1, 'label': 'Low-temperature sample from an A1 simulation',
         'size': size, 'temperature': lT, 'field': h, 'coupling': J,
         'action_rates': action_rates, 'dt': dt_lT,
-        'burn_in': 1000, 'length': 10000000, 'frame_step': 1000,
+        'burn_in': 1000, 'length': 100000000, 'frame_step': 10000,
         'output': f'{dir_path}/a1-lT.json'
     },
     {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
         'size': size, 'temperature': hT, 'field': h, 'coupling': J,
         'action_rates': action_rates, 'dt': dt_hT,
-        'burn_in': 1000, 'length': 20000000, 'frame_step': 2000,
+        'burn_in': 1000, 'length': 200000000, 'frame_step': 20000,
         'output': f'{dir_path}/a1-hT.json'
     },
     {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',
@@ -83,3 +84,4 @@ if __name__ == '__main__':
         print(kwargs.pop('label'))
         method(**kwargs)
         print()
+

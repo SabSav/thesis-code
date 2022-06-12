@@ -20,7 +20,7 @@ J = 1
 #action_rates = np.array([[0.7, 0.1] for i in range(size)])
 
 action_rates = np.array([
-    2 * [0.2 if i % 2 == 0 else 0.1]
+    2 * [0.1 if i % 2 == 0 else 0.05]
     for i in range(size)
 ])
 
