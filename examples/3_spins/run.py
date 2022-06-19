@@ -46,7 +46,7 @@ cases = [
      'output': f'{dir_path}/mc-lT.json'},
     {'method': mc, 'label': 'High-temperature sample from an MC simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'burn_in': 10000, 'length': 1000000, 'frame_step': 10,
+     'burn_in': 10000, 'length': 10000000, 'frame_step': 100,
      'output': f'{dir_path}/mc-hT.json'
      },
     {'method': alg1, 'label': 'Low-temperature sample from an A1 simulation',
@@ -63,14 +63,14 @@ cases = [
      },
     {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': 10,
-     'burn_in': 10000, 'length': 1000000, 'frame_step': 10,
+     'action_rates': action_rates, 'dt': 300,
+     'burn_in': 10000, 'length': 30000000, 'frame_step': 300,
      'output': f'{dir_path}/a2-lT.json'
      },
     {'method': alg2, 'label': 'High-temperature sample from an A2 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': 10,
-     'burn_in': 10000, 'length': 1000000, 'frame_step': 10,
+     'action_rates': action_rates, 'dt': 100,
+     'burn_in': 10000, 'length': 10000000, 'frame_step': 100,
      'output': f'{dir_path}/a2-hT.json'
      }
 

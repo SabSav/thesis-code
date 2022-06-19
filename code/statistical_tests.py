@@ -80,13 +80,17 @@ def one_sample_chi_squared_multinomial(probabilities, counts, size=1000):
     tot = np.sum(counts)
     num = len(counts)  # number of categories
     est = tot * probabilities
-    stat = np.sum((counts - est) ** 2 / est)
+    stat = 0
+    for i in range(len(est)):
+        if est[i] != 0: stat += ((counts[i] - est[i]) ** 2) / est[i]
 
     counter = 0
     for _ in range(size):
+        value = 0
         smp = np.random.multinomial(tot, probabilities)
-        if np.sum((smp - est) ** 2 / est) > stat:
-            counter += 1
+        for i in range(len(est)):
+            if est[i] != 0: value += ((smp[i] - est[i]) ** 2) / est[i]
+        if value > stat: counter += 1
     return counter / size
 
 

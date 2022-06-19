@@ -2,46 +2,59 @@
 (* ::Package:: *)
 
 SetDirectory[NotebookDirectory[]];
-engyMc = Import["mc-hT.json", "RawJSON"]["energy_sample"];
-engyAlg1 = Import["a1-hT.json", "RawJSON"]["energy_sample"];
-engyAlg2 = Import["a2-hT.json", "RawJSON"]["energy_sample"];
-acrlMc = ListPlot[CorrelationFunction[engyMc, {20}], Filling -> Axis, PlotRange -> All, PlotLabel->"Mc"];
-acrlAlg1 = ListPlot[CorrelationFunction[engyAlg1, {20}], Filling -> Axis, PlotRange -> All, PlotStyle->Magenta, PlotLabel->"Alg1"];
-acrlAlg2 = ListPlot[CorrelationFunction[engyAlg2, {20}], Filling -> Axis, PlotRange -> All, PlotStyle->Brown, PlotLabel->"Alg2"];
+readSample[nameFile_, nameQuantity_] := Import[nameFile, "RawJSON"][nameQuantity];
+acrPlot[sample_, length_, label_, color_] := ListPlot[CorrelationFunction[sample, {length}], Filling -> Axis, 
+													  PlotRange -> All,  PlotStyle-> color, PlotLabel-> label];
+setLabels[nameQuantity_] := Import["theory-hT.json", "RawJSON"][nameQuantity];
+generateCounts[nameFile_, nameQuantity_] := Sort[Tally[Import[nameFile, "RawJSON"][nameQuantity]]][[All, 2]];
+sampleTheory[nsample_, nameQuantity_]:= Round[nsample * readSample["theory-hT.json", nameQuantity]];
+statParamTheory[nsample_, nameQuantity_]:= (
+	stdTheory = StandardDeviation[MultinomialDistribution[n= nsample, readSample["theory-lT.json", nameQuantity]]];
+	meanTheory = Mean[MultinomialDistribution[n= nsample, readSample["theory-hT.json", nameQuantity]]];
+	Return[{stdTheory, meanTheory}];
+	)
+	
+stdSample[sample_, meanTheory_, stdTheory_] :=  
+(
+std = stdTheory;
+sampleErrors = sample;
+factor = sample;
+For[i = 1, i <= Length[sample], i++,
+	factor[[i]] = Round[Abs[sample[[i]] - meanTheory[[i]]] / stdTheory[[i]]];
+	];
+For[i = 1, i <= Length[sample], i++, 
+	If[factor[[i]]> 1, std[[i]] = factor[[i]]* stdTheory[[i]] ];
+	sampleErrors[[i]] = Around[sample[[i]], std[[i]]];
+];
+Return[sampleErrors];
+)
+
+
+engyMc = readSample["mc-hT.json","energy_sample"];
+engyAlg1 = readSample["a1-hT.json","energy_sample"];
+engyAlg2 = readSample["a2-hT.json","energy_sample"];
+acrlMc = acrPlot[engyMc, 20, "Mc", Blue];
+acrlAlg1 = acrPlot[engyAlg1, 20, "Alg1", Magenta];
+acrlAlg2 = acrPlot[engyAlg2, 20, "Alg", Brown];
 GraphicsRow[{acrlMc, acrlAlg1, acrlAlg2}, ImageSize->Full]
 
 
-SetDirectory[NotebookDirectory[]];
-labels = Import["theory-hT.json", "RawJSON"]["energy_level"];
-engyMc = Sort[Tally[Import["mc-hT.json", "RawJSON"]["energy_sample"]]][[All, 2]] ;
-engyAlg1 = Sort[Tally[Import["a1-hT.json", "RawJSON"]["energy_sample"]]][[All, 2]];
-engyAlg2 = Sort[Tally[Import["a2-hT.json", "RawJSON"]["energy_sample"]]][[All, 2]];
-engyTheory = Round[Total[engyMc] * Import["theory-hT.json", "RawJSON"]["energy_probs"]];
-stdTheory = StandardDeviation[MultinomialDistribution[n= Total[engyMc],Import["theory-hT.json", "RawJSON"]["energy_probs"]]];
-meanTheory =  Mean[MultinomialDistribution[n= Total[engyMc],Import["theory-hT.json", "RawJSON"]["energy_probs"]]];
-factorMc = Round[Abs[engyMc - meanTheory] / stdTheory];
-stdMc = stdTheory;
-engyMcErrors = engyMc;
-For[i = 1, i <= Length[labels], i++,
-	If[factorMc [[i]]> 1, stdMc[[i]] = factorMc[[i]]* stdTheory[[i]]];
-	engyMcErrors[[i]] = Around[engyMc[[i]], stdMc[[i]]];
-	]
-factorAlg1 = Round[Abs[engyAlg1 - meanTheory] / stdTheory];
-stdAlg1 = stdTheory;
-engyAlg1Errors = engyAlg1;
-For[i = 1, i <= Length[labels], i++, 
-	If[factorAlg1[[i]]> 1, stdAlg1[[i]] = factorAlg1[[i]]* stdTheory[[i]] ];
-	engyAlg1Errors[[i]] = Around[engyAlg1[[i]], stdAlg1[[i]]];
-]
-factorAlg2= Round[Abs[engyAlg2 - meanTheory] / stdTheory];
-stdAlg2 = stdTheory;
-engyAlg2Errors = engyAlg2;
+labels = setLabels["energy_level"];
+engyMc = generateCounts["mc-hT.json", "energy_sample"];
+engyAlg1 = generateCounts["a1-hT.json", "energy_sample"];
+engyAlg2 = generateCounts["a2-hT.json", "energy_sample"];
+engyTheory = sampleTheory[Total[engyMc], "energy_probs"];
+stats = statParamTheory[Total[engyMc], "energy_probs"];
+stdTheory = stats[[1]];
+meanTheory = stats[[2]];
+engyMcErrors = stdSample[engyMc, meanTheory, stdTheory];
+engyAlg1Errors = stdSample[engyAlg1, meanTheory, stdTheory];
+engyAlg2Errors = stdSample[engyAlg2, meanTheory, stdTheory];
 engyTheoryErrors = engyTheory;
 For[i = 1, i <= Length[labels], i++,
-	If[factorAlg2 [[i]]> 1, stdAlg2[[i]]= factorAlg2[[i]]* stdTheory[[i]]];
-	engyAlg2Errors[[i]] = Around[engyAlg2[[i]], stdAlg2[[i]]];
 	engyTheoryErrors[[i]] = Around[engyTheory[[i]], stdTheory[[i]]]
-]
+];
+
 colors = ColorData[54];
 baseStyle = Directive[Black, FontFamily->"Arial", FontSize->16];
 frameStyle = Append[baseStyle, Thickness@0.003];
@@ -51,54 +64,31 @@ ChartLabels->{Placed[{"Mc","Alg1", "Alg2", "Theory"},Center, rotateLabel],labels
 BaseStyle->baseStyle, FrameStyle->frameStyle, ImageSize-> Large, ChartLegends->labels]
 
 
-PearsonChiSquareTest[engyMc, engyTheory]
-PearsonChiSquareTest[engyAlg1, engyTheory]
-PearsonChiSquareTest[engyAlg2, engyTheory]
-
-
-PearsonChiSquareTest[Import["mc-hT.json", "RawJSON"]["energy_sample"], Import["a1-hT.json", "RawJSON"]["energy_sample"]]
-PearsonChiSquareTest[Import["mc-hT.json", "RawJSON"]["energy_sample"], Import["a2-hT.json", "RawJSON"]["energy_sample"]]
-
-
-magnMc = Import["mc-hT.json", "RawJSON"]["magnetization_sample"];
-magnAlg1 = Import["a1-hT.json", "RawJSON"]["magnetization_sample"];
-magnAlg2 = Import["a2-hT.json", "RawJSON"]["magnetization_sample"];
-acrlMc = ListPlot[CorrelationFunction[magnMc, {20}], Filling -> Axis, PlotRange -> All, PlotLabel->"Mc"];
-acrlAlg1 = ListPlot[CorrelationFunction[magnAlg1, {20}], Filling -> Axis, PlotRange -> All, PlotStyle->Magenta, PlotLabel->"Alg1"];
-acrlAlg2 = ListPlot[CorrelationFunction[magnAlg2, {20}], Filling -> Axis, PlotRange -> All, PlotStyle->Brown, PlotLabel->"Alg2"];
+magnMc = readSample["mc-hT.json","magnetization_sample"];
+magnAlg1 = readSample["a1-hT.json","magnetization_sample"];
+magnAlg2 = readSample["a2-hT.json","magnetization_sample"];
+acrlMc = acrPlot[magnMc, 20, "Mc", Blue];
+acrlAlg1 = acrPlot[magnAlg1, 20, "Alg1", Magenta];
+acrlAlg2 = acrPlot[magnAlg2, 20, "Alg2", Brown];
 GraphicsRow[{acrlMc, acrlAlg1, acrlAlg2}, ImageSize->Full]
 
 
-labels = Import["theory-hT.json", "RawJSON"]["magnetization_level"];
-magnMc = Sort[Tally[Import["mc-hT.json", "RawJSON"]["magnetization_sample"]]][[All, 2]] ;
-magnAlg1 = Sort[Tally[Import["a1-hT.json", "RawJSON"]["magnetization_sample"]]][[All, 2]];
-magnAlg2 = Sort[Tally[Import["a2-hT.json", "RawJSON"]["magnetization_sample"]]][[All, 2]];
-magnTheory = Round[Total[engyMc] * Import["theory-hT.json", "RawJSON"]["magnetization_probs"]];
-stdTheory = StandardDeviation[MultinomialDistribution[n= Total[magnMc],Import["theory-hT.json", "RawJSON"]["magnetization_probs"]]];
-meanTheory =  Mean[MultinomialDistribution[n= Total[engyMc],Import["theory-hT.json", "RawJSON"]["magnetization_probs"]]];
-factorMc = Round[Abs[magnMc - meanTheory] / stdTheory];
-stdMc = stdTheory;
-magnMcErrors = magnMc;
-For[i = 1, i <= Length[labels], i++,
-	If[factorMc [[i]]> 1, stdMc[[i]] = factorMc[[i]]* stdTheory[[i]]];
-	magnMcErrors[[i]] = Around[magnMc[[i]], stdMc[[i]]];
-	]
-factorAlg1 = Round[Abs[magnAlg1 - meanTheory] / stdTheory];
-stdAlg1 = stdTheory;
-magnAlg1Errors = magnAlg1;
-For[i = 1, i <= Length[labels], i++, 
-	If[factorAlg1[[i]]> 1, stdAlg1[[i]] = factorAlg1[[i]]* stdTheory[[i]]];
-	magnAlg1Errors[[i]] = Around[magnAlg1[[i]], stdAlg1[[i]]];
-]
-factorAlg2= Round[Abs[magnAlg2 - meanTheory] / stdTheory];
-stdAlg2 = stdTheory;
-magnAlg2Errors = magnAlg2;
+labels = setLabels["magnetization_level"];
+magnMc = generateCounts["mc-hT.json", "magnetization_sample"];
+magnAlg1 = generateCounts["a1-hT.json", "magnetization_sample"];
+magnAlg2 = generateCounts["a2-hT.json", "magnetization_sample"];
+magnTheory = sampleTheory[Total[magnMc], "magnetization_probs"];
+stats = statParamTheory[Total[magnMc], "magnetization_probs"];
+stdTheory = stats[[1]];
+meanTheory = stats[[2]];
+magnMcErrors = stdSample[magnMc, meanTheory, stdTheory];
+magnAlg1Errors = stdSample[magnAlg1, meanTheory, stdTheory];
+magnAlg2Errors = stdSample[magnAlg2, meanTheory, stdTheory];
 magnTheoryErrors = magnTheory;
 For[i = 1, i <= Length[labels], i++,
-	If[factorAlg2 [[i]]> 1, stdAlg2[[i]]= factorAlg2[[i]]* stdTheory[[i]]];
-	magnAlg2Errors[[i]] = Around[magnAlg2[[i]], stdAlg2[[i]]];
 	magnTheoryErrors[[i]] = Around[magnTheory[[i]], stdTheory[[i]]]
-]
+];
+
 colors = ColorData[54];
 baseStyle = Directive[Black, FontFamily->"Arial", FontSize->16];
 frameStyle = Append[baseStyle, Thickness@0.003];
@@ -106,19 +96,3 @@ rotateLabel[label_]:=Style[Rotate[label,Pi/4],30,Bold,Opacity[0.2],FontFamily->"
 BarChart[{magnMcErrors, magnAlg1Errors, magnAlg2Errors, magnTheoryErrors}, 
 ChartLabels->{Placed[{"Mc","Alg1", "Alg2", "Theory"},Center, rotateLabel],labels},
 BaseStyle->baseStyle, FrameStyle->frameStyle, ImageSize-> Large, ChartLegends->labels]
-
-
-PearsonChiSquareTest[magnMc, magnTheory]
-PearsonChiSquareTest[magnAlg1, magnTheory]
-PearsonChiSquareTest[magnAlg2, magnTheory]
-
-
-PearsonChiSquareTest[Import["mc-hT.json", "RawJSON"]["magnetization_sample"], Import["a1-hT.json", "RawJSON"]["magnetization_sample"]]
-PearsonChiSquareTest[Import["mc-hT.json", "RawJSON"]["magnetization_sample"], Import["a2-hT.json", "RawJSON"]["magnetization_sample"]]
-
-
-
-
-
-
-

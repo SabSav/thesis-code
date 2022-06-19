@@ -6,7 +6,7 @@ readSample[nameFile_, nameQuantity_] := Import[nameFile, "RawJSON"][nameQuantity
 acrPlot[sample_, length_, label_, color_] := ListPlot[CorrelationFunction[sample, {length}], Filling -> Axis, 
 													  PlotRange -> All,  PlotStyle-> color, PlotLabel-> label];
 kde[sample_, label_, color_] := Return[SmoothHistogram[sample, Automatic, "PDF", PlotStyle-> color, PlotLegends->{label}, PlotRange->All]];
-hist[sample_, label_, color_, width_, nameQuantity_] := Return[Histogram[sample, bspec = width, ChartStyle->color, ChartLabels->{label}, 
+hist[sample_, label_, color_, nameQuantity_] := Return[Histogram[sample, bspec = Automatic, ChartStyle->color, ChartLabels->{label}, 
 															   AxesLabel->{nameQuantity, "Frequency"}]]
 
 
@@ -28,10 +28,9 @@ alg2 = kde[engyAlg1Rescaled, "Alg2", Brown];
 Show[{mc, alg1, alg2}, AxesLabel->{"Energy level", "Density"}]
 
 
-J = Import["mc-hT.json", "RawJSON"]["coupling"];
-hMc = hist[engyMcRescaled, "Mc", LightBlue, 4, "Energy level"];
-hAlg1 = hist[engyAlg1Rescaled, "Alg1", LightMagenta, 4, "Energy level"];
-hAlg2 = hist[engyAlg1Rescaled, "Alg2", LightBrown, 4, "Energy level"];
+hMc = hist[engyMcRescaled, "Mc", LightBlue, "Energy level"];
+hAlg1 = hist[engyAlg1Rescaled, "Alg1", LightMagenta, "Energy level"];
+hAlg2 = hist[engyAlg1Rescaled, "Alg2", LightBrown, "Energy level"];
 GraphicsRow[{hMc, hAlg1, hAlg2}, ImageSize->Full]
 
 
@@ -40,7 +39,7 @@ magnAlg1 = readSample["a1-hT.json", "magnetization_sample"];
 magnAlg2 = readSample["a2-hT.json", "magnetization_sample"];
 acrlMc = acrPlot[magnMc, 20, "Mc", Blue];
 acrlAlg1 = acrPlot[magnAlg1, 20, "Alg1", Magenta];
-acrlAlg2 = acrPlot[magnAlg2, 20, "Alg", Brown];
+acrlAlg2 = acrPlot[magnAlg2, 20, "Alg2", Brown];
 GraphicsRow[{acrlMc, acrlAlg1, acrlAlg2}, ImageSize->Full]
 
 
@@ -50,7 +49,7 @@ alg2 = kde[magnAlg2, "Alg2", Brown];
 Show[{mc, alg1, alg2}, AxesLabel->{"Magnetization level", "Density"}]
 
 
-hMc = hist[magnMc, "Mc", LightBlue, Automatic, "Magnetization level"];
-hAlg1 = hist[magnAlg1, "Alg1", LightMagenta, Automatic, "Magnetization level"];
-hAlg2 = hist[magnAlg2, "Alg2", LightBrown, Automatic, "Magnetization level"];
+hMc = hist[magnMc, "Mc", LightBlue, "Magnetization level"];
+hAlg1 = hist[magnAlg1, "Alg1", LightMagenta, "Magnetization level"];
+hAlg2 = hist[magnAlg2, "Alg2", LightBrown, "Magnetization level"];
 GraphicsRow[{hMc, hAlg1, hAlg2}, ImageSize->Full]

@@ -97,6 +97,7 @@ def simulate(
     bundle = chain.export_dict()
     bundle['energy_sample'] = energy.tolist()
     bundle['magnetization_sample'] = magnetization.tolist()
+    bundle['length of simulation'] = length
     bundle['frame_step'] = frame_step
     with open(output, 'w') as file:
         json.dump(bundle, file)

@@ -21,11 +21,11 @@ J = 1
 #action_rates = np.array([[0.7, 0.1] for i in range(size)])
 
 action_rates = np.array([
-    2 * [0.1 if i % 2 == 0 else 0.05]
+    2 * [0.05 if i % 2 == 0 else 0.025]
     for i in range(size)
 ])
 
-dt_lT = 0.01
+dt_lT = 0.1
 dt_hT = 0.05
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -56,13 +56,13 @@ cases = [
     {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': 100,
-     'burn_in': 1000, 'length': 10000000, 'frame_step': 1000,
+     'burn_in': 1000, 'length': 1000000, 'frame_step': 100,
      'output': f'{dir_path}/a2-lT.json'
      },
     {'method': alg2, 'label': 'High-temperature sample from an A2 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': 100,
-     'burn_in': 1000, 'length': 10000000, 'frame_step': 1000,
+     'burn_in': 1000, 'length': 1000000, 'frame_step': 100,
      'output': f'{dir_path}/a2-hT.json'
      }
 

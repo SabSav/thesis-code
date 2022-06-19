@@ -26,11 +26,11 @@ def main(args):
 
     # Skip the first burn_in samples so that the stationary distribution is reached
     for _ in tqdm(range(args.burn_in), desc="Burn-in"):
-        chain.metropolis_pass()
+        chain.advance()
 
     # Collect samples
     for i in tqdm(range(args.length), desc="Simulation"):
-        chain.metropolis_pass()
+        chain.advance()
         if i % args.frame_step == 0:
             index = i // args.frame_step
             energy[index] = chain.energy()
@@ -75,11 +75,11 @@ def simulate(
     magnetization = np.empty_like(energy)
 
     # Skip the first burn_in samples so that the stationary distribution is reached
-    for _ in tqdm(range(burn_in), desc="Burn-in"): chain.metropolis_pass()
+    for _ in tqdm(range(burn_in), desc="Burn-in"): chain.advance()
 
     # Collect samples
     for i in tqdm(range(length), desc="Simulation"):
-        chain.metropolis_pass()
+        chain.advance()
         if i % frame_step == 0:
             index = i // frame_step
             energy[index] = chain.energy()

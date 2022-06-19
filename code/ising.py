@@ -234,7 +234,7 @@ class Metropolis(Chain):
     def __init__(self, coupling=1.0, temperature=1.0, field=0., **kwargs):
         super().__init__(coupling, temperature, field, **kwargs)
 
-    def metropolis_pass(self):
+    def advance(self):
         """Apply Metropolis step to each spin of the chain in random order
 
             Returns
@@ -244,141 +244,6 @@ class Metropolis(Chain):
             if np.random.random() < np.exp(- self.deltaE(spin_to_change) / self.temperature):
                 self.spins[spin_to_change] *= -1
         return self.spins
-
-
-def acrl(v, time_evolution):
-    """Calculate the correlation for both quantity v
-    Args:
-        v: 1D array of samples
-        time_evolution:
-    Returns: correlation
-    """
-    v = np.asarray(v)
-    v_demean = v - np.mean(v)
-    nrm = np.var(v_demean)
-    tot = len(v_demean)
-
-    return np.array([
-        np.mean(v_demean[t:] * v_demean[:tot - t])
-        for t in range(time_evolution)
-    ]) / nrm
-
-
-def theoretical_distributions(chain: Chain):
-    """Return theoretical distributions for the energy and magnetization
-
-    The estimates are returned within a reasonable time with 25 spins or less.
-
-    Args:
-        chain: Ising chain for which the estimates are calculated
-
-    Returns:
-        (float, (n, 2)): `n` energy levels with values in the first column
-            and their probabilities in the second (sorted by the energy)
-
-        (float, (n, 2)): `n` magnetization states with values in the first
-            column and their probabilities in the second (sorted by values)
-
-    """
-    size = len(chain.spins)
-    eng = {}  # Energy levels with their weights
-    mgn = {}  # Magnetization values (not mean) with their wights
-    for conf in tqdm(
-            itertools.product([1, -1], repeat=size), total=2 ** size,
-            desc='Generating theoretical configurations'
-    ):
-
-        chain.spins = conf
-
-        e = chain.energy()
-        weight = np.exp(-e / chain.temperature)
-        if e in eng:  # accumulate energy weights
-            eng[e] += weight
-        else:
-            eng[e] = weight
-
-        m = np.sum(chain.spins)
-        if m in mgn:  # accumulate magnetization weights
-            mgn[m] += weight
-        else:
-            mgn[m] = weight
-
-    energy = np.array(sorted(eng.items()))
-    magnetization = np.array(sorted(mgn.items()))
-
-    z = np.sum(energy[:, 1])
-    energy[:, 1] /= z
-    magnetization[:, 0] /= size
-    magnetization[:, 1] /= z
-
-    return energy, magnetization
-
-
-def theoretical_quantities(n_samples, quantity):
-    """Calculate the theoretical energy and magnetization counts.
-       Calculate the binomial avg and std deviation for theoretical energy
-
-        Args:
-            n_samples: total number of samples of the algorithms
-            quantity: theoretical quantity
-
-        Returns:
-            (float, 1D-array): counts per theoretical quantity level
-            (float): multinomial average
-            (float): multinomial standard deviation
-    """
-    theory_quantity_counts = [quantity[i, 1] * n_samples for i in range(len(quantity))]
-
-    binom_average = np.empty(len(quantity))
-    binom_std = np.empty(len(quantity))
-
-    for i in range(len(quantity)):
-        binom_average[i] = scipy.stats.binom.mean(n_samples, p=quantity[i, 1])
-        binom_std[i] = scipy.stats.binom.std(n=n_samples, p=quantity[i, 1])
-
-    return theory_quantity_counts, binom_average, binom_std
-
-
-def std_algorithms(counts, theory_avg, theory_quantity_levels, theory_std):
-    """Calculate the std for the two algorithms for the barchart (used when N.spins <= 4)
-        Args:
-            counts (dict): counts per quantity level generating by the algorithm
-            theory_avg (1d- array): theoretical average
-            theory_quantity_levels (2d-array): theoretical levels - theoretical counts
-            theory_std (1d-array): theoretical std
-
-        Returns: multiplicity: integer value that multiply the theory_std
-                 std: actual std of the algorithms for each bar
-                 counts: dictionary with the counts per energy level
-
-    """
-    quantity_level = defaultdict(int)
-    keys = theory_quantity_levels[:, 0]
-
-    for k in zip(keys):
-        quantity_level[k] = 0
-    i = 0
-    for k in quantity_level.keys():
-        quantity_level[k] = theory_avg[i]
-        i += 1
-    quantity_level = {key[0]: value for key, value in quantity_level.items()}
-
-    items = list(counts.items())
-    if len(quantity_level) > len(counts.values()):
-        for key in list(quantity_level.keys()):
-            if key not in list(counts.keys()):
-                items.insert(0, (key, 0))
-    counts = OrderedDict(sorted(dict(items).items()))
-
-    multiplicity = np.empty(len(quantity_level))
-    std = theory_std
-    for i in range(len(theory_avg)):
-        factor = abs(list(counts.values())[i] - theory_avg[i]) / theory_std[i]
-        multiplicity[i] = round(factor)
-        if factor > 1:
-            std[i] = factor * theory_std[i]
-
-    return multiplicity, std, counts
 
 
 def count_variables(var):
@@ -391,41 +256,6 @@ def count_variables(var):
     var = np.sort(var)
     var_count = Counter(var)
     return var_count
-
-
-def theoretical_test(f_obs, theory_prob, n_samples, eps):
-    """Testing for equivalence of a single multinomial distribution with a fully specified reference distribution
-       upper bound = eps^2 - qnorm(1-alpha)*std
-       distance = (prob_sample - theory_prob)**2
-       Reject lack of fit if distance < upper_bound
-            Args:
-                f_obs: counts of the quantity to analyze
-                theory_prob: theoretical probabilities
-                n_samples: total number of samples
-                eps: tolerance level
-
-            Returns: dictionary with:
-                    - distance
-                    - upper bound
-                    - reject: if True the two distribution are the same, False the two dristibution are not the same
-    """
-    prob_sample = np.array([i / n_samples for i in f_obs])
-    dist_sample = 0
-    var1 = 0
-    var2 = 0
-    for i in range(len(theory_prob)):
-        dist_sample += (prob_sample[i] - theory_prob[i]) ** 2
-        var1 += (prob_sample[i] - theory_prob[i]) ** 2 * prob_sample[i]
-    for i in range(len(theory_prob)):
-        for j in range(len(theory_prob)):
-            var2 += (prob_sample[i] - theory_prob[i]) * (prob_sample[j] - theory_prob[j]) * prob_sample[i] * \
-                    prob_sample[j]
-    std = np.sqrt((4 * (var1 - var2)) / n_samples)
-    alpha = 0.05
-    upper_bound = eps ** 2 - scipy.stats.norm.ppf(1 - alpha) * std
-    pvalue = scipy.stats.norm.sf(x=upper_bound, scale=std)  # the test in one tailed h0: P(distance >= upperbound)
-    results = {"Distance": dist_sample, "Upper_bound": upper_bound, "pvalue": pvalue}
-    return results
 
 
 def equilibrate_counts(dict_a, dict_b):
