@@ -1,6 +1,6 @@
-"""Monte Carlo simulation of a one-dimensional Ising model
+"""Algorithm 1 simulation of a one-dimensional Ising model
 
-This script performs a Metropolis sampling of an Ising chain and outputs parameters
+This script performs the dynamic simulation of an Ising chain and outputs parameters
 of the simulation together with a sample of energy and average magnetization into
 a given file in the JSON format.
 
@@ -13,21 +13,19 @@ import ising
 
 
 def main(args):
-    """@deprecated Perform Metropolis sampling of an Ising chain
+    """Perform Metropolis sampling of an Ising chain
 
     Args:
         args: Parsed command-line arguments
     """
 
-    chain = ising.Metropolis(size=args.size, temperature=args.temperature, field=args.field, coupling=args.coupling)
+    chain = ising.DynamicChain(size=args.size, temperature=args.temperature, coupling=args.coupling,
+                               field=args.field, action_rates=args.action_rates, dt=args.dt)
     np.random.seed(args.seed)
     energy = np.empty(args.length // args.frame_step)
     magnetization = np.empty_like(energy)
 
-    # Skip the first burn_in samples so that the stationary distribution is reached
-    for _ in tqdm(range(args.burn_in), desc="Burn-in"):
-        chain.advance()
-
+    for _ in tqdm(range(args.burn_in), desc="Burn-in"): chain.advance()
     # Collect samples
     for i in tqdm(range(args.length), desc="Simulation"):
         chain.advance()
@@ -36,16 +34,20 @@ def main(args):
             energy[index] = chain.energy()
             magnetization[index] = np.mean(chain.spins)
 
+    print(f"Simulations saved to {args.output}")
+
 
 def simulate(
         size=3, temperature=1.0, field=0.0, coupling=1.0, burn_in=10,
-        length=1000, seed=0, frame_step=1
+        length=1000, seed=0, frame_step=1, action_rates=None, dt=None,
 ):
-    """Perform Metropolis sampling of an Ising chain
+    """Perform sampling of an Ising chain simulated by the Algoirthm 1
 
     The sample is output into a JSON file.
 
     Args:
+        output (str): Path to the output file, which will be created or, if
+            exists, overwritten
         size (int): Chain size
         temperature (float): Heat bath temperature
         field (float): External magnetic field
@@ -54,29 +56,42 @@ def simulate(
         length (int): Total length of the simulation
         seed (int): Random generator seed
         frame_step (int): Number of steps between the sampled frames
+        action_rates (int[]): Action rates of the spins
+        :param burn_in:
+        :param coupling:
+        :param field:
+        :param temperature:
+        :param output:
+        :param size:
+        :param length:
+        :param seed:
+        :param frame_step:
+        :param action_rates:
+        :param dt:
     """
 
-    chain = ising.Metropolis(
-        size=size, temperature=temperature, field=field, coupling=coupling
+    chain = ising.DynamicChain(
+        size=size, temperature=temperature, coupling=coupling,
+        field=field, action_rates=action_rates, dt=dt
     )
     np.random.seed(seed)
     energy = np.empty(length // frame_step)
     magnetization = np.empty_like(energy)
 
-    # Skip the first burn_in samples so that the stationary distribution is reached
+    # Relax initial configuration
     for _ in tqdm(range(burn_in), desc="Burn-in"): chain.advance()
 
     # Collect samples
-    for i in tqdm(range(length), desc="Simulation MC"):
+    for i in tqdm(range(length), desc="Simulation Alg1"):
         chain.advance()
         if i % frame_step == 0:
             index = i // frame_step
             energy[index] = chain.energy()
             magnetization[index] = np.mean(chain.spins)
+
     return energy, magnetization
 
 ### Execute main script
-
 
 
 if __name__ == '__main__':
@@ -97,8 +112,12 @@ if __name__ == '__main__':
         help="Interaction term"
     )
     parser.add_argument(
-        '-B', dest='burn_in', type=int, default=10,
-        help="Number of burn-in passes"
+        '-AR', dest='action_rates', type=float, default=np.full((3, 2), 1),
+        help="Action rates"
+    )
+    parser.add_argument(
+        '-dt', dest='dt', type=float, default=0.1,
+        help="Time interval"
     )
     parser.add_argument(
         '-l', dest='length', type=int, default=1000,
