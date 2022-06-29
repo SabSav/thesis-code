@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 import numpy as np
+import scipy
 from scipy import special as sp
 from collections import OrderedDict
 
@@ -36,7 +37,7 @@ def one_sample_chi_squared(probabilities, counts):
     df = num - 1
     est = tot * probabilities
     for i in range(num):
-        if est[i] == 0 and counts[i] == 0:  # no counts mean one less degree of freedom
+        if est[i] == 0 and counts[i] == 0:  # no counts means one less degree of freedom
             df -= 1
     stat = np.sum((counts - est) ** 2 / est)
     return sp.gammaincc(df / 2, stat / 2)
@@ -63,7 +64,7 @@ def two_sample_chi_squared(counts1, counts2):
     return sp.gammaincc(df / 2, stat / 2)
 
 
-def one_sample_chi_squared_multinomial(probabilities, counts, size=1000):
+def one_sample_chi_squared_resampling(probabilities, counts, size=100000):
     """Chi-squared resampling test with one sample from a multinomial distribution
 
     The larger is the p-value of the test, the more likely that the sample comes

@@ -4,7 +4,7 @@
 #SBATCH -N 1 # Number of nodes
 #SBATCH -n 2 # Number of cpus in node
 #SBATCH --mem 8G
-#SBATCH -t 2-00:00:00
+#SBATCH -t 7-00:00:00
 #SBATCH -o slurm/%j.log
 #SBATCH -e slurm/%j.log
 #SBATCH --mail-type=END,FAIL

@@ -11,7 +11,7 @@ from theoretical_quantities import simulate as theory
 
 size = 3
 lT = 0.5
-hT = 3
+hT = 2
 h = 0
 J = 1
 # action_rates = np.empty((size, 2))
@@ -28,50 +28,50 @@ action_rates = np.array([
     for i in range(size)
 ])
 
-dt_lT = 0.1
-dt_hT = 0.05
+dt_lT = 0.05
+dt_hT = 0.01
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 cases = [
     {'method': theory, 'label': 'Low-temperature Theory',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
-     'output': f'{dir_path}/theory-lT.json'},
+     'output': f'{dir_path}/theory-lT-{h}.json'},
     {'method': theory, 'label': 'High-temperature Theory',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'output': f'{dir_path}/theory-hT.json'},
+     'output': f'{dir_path}/theory-hT-{h}.json'},
     {'method': mc, 'label': 'Low-temperature sample from an MC simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
-     'burn_in': 10000, 'length': 1000000, 'frame_step': 10,
-     'output': f'{dir_path}/mc-lT.json'},
+     'burn_in': 10000, 'length': 10000000, 'frame_step': 100,
+     'output': f'{dir_path}/mc-lT-{h}.json'},
     {'method': mc, 'label': 'High-temperature sample from an MC simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'burn_in': 10000, 'length': 10000000, 'frame_step': 100,
-     'output': f'{dir_path}/mc-hT.json'
+     'burn_in': 10000, 'length': 100000000, 'frame_step': 1000,
+     'output': f'{dir_path}/mc-hT-{h}.json'
      },
     {'method': alg1, 'label': 'Low-temperature sample from an A1 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': dt_lT,
-     'burn_in': 10000, 'length': 10000000, 'frame_step': 100,
-     'output': f'{dir_path}/a1-lT.json'
+     'burn_in': 10000, 'length': 20000000, 'frame_step': 200,
+     'output': f'{dir_path}/a1-lT-{h}.json'
      },
     {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': dt_hT,
-     'burn_in': 10000, 'length': 20000000, 'frame_step': 200,
-     'output': f'{dir_path}/a1-hT.json'
+     'burn_in': 10000, 'length': 100000000, 'frame_step': 1000,
+     'output': f'{dir_path}/a1-hT-{h}.json'
      },
     {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': 300,
-     'burn_in': 10000, 'length': 30000000, 'frame_step': 300,
-     'output': f'{dir_path}/a2-lT.json'
+     'action_rates': action_rates, 'dt': 1000,
+     'burn_in': 10000, 'length': 100000000, 'frame_step': 1000,
+     'output': f'{dir_path}/a2-lT-{h}.json'
      },
     {'method': alg2, 'label': 'High-temperature sample from an A2 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': 100,
-     'burn_in': 10000, 'length': 10000000, 'frame_step': 100,
-     'output': f'{dir_path}/a2-hT.json'
+     'action_rates': action_rates, 'dt': 500,
+     'burn_in': 10000, 'length': 50000000, 'frame_step': 500,
+     'output': f'{dir_path}/a2-hT-{h}.json'
      }
 
 ]

@@ -5,7 +5,7 @@
 #SBATCH -N 1 # Number of nodes
 #SBATCH -n 2 # Number of cpus in node
 #SBATCH --mem 8G
-#SBATCH -t 2-00:00:00
+#SBATCH -t 7-00:00:00
 #SBATCH -o slurm/%A_%a.log
 #SBATCH -e slurm/%A_%a.log
 #SBATCH --mail-type=END,FAIL
@@ -22,7 +22,7 @@ python examples/3_spins/run.py -i "[${SLURM_ARRAY_TASK_ID}]"
 
 # Epilogue
 duration=$SECONDS
-days=$((duration / 86400))
+days=$((duration / 86400))w
 hours=$((duration % 86400 / 3600))
 minutes=$((duration % 3600 / 60))
 seconds=$((duration % 60))

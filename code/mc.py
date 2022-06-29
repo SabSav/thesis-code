@@ -49,7 +49,7 @@ def main(args):
 def simulate(
         output, size=3, temperature=1.0, field=0.0, coupling=1.0, burn_in=10,
         length=1000, seed=0, frame_step=1
-    ):
+):
     """Perform Metropolis sampling of an Ising chain
 
     The sample is output into a JSON file.
