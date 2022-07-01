@@ -18,65 +18,55 @@ def main(args):
     Args:
         args: Parsed command-line arguments
     """
-
-    chain = ising.Metropolis(size=args.size, temperature=args.temperature, field=args.field, coupling=args.coupling)
-    np.random.seed(args.seed)
-    energy = np.empty(args.length // args.frame_step)
-    magnetization = np.empty_like(energy)
+    energy = np.empty(len(args.temperature))
+    magnetization = np.empty(len(args.temperature))
+    for temp in range(len(args.temperature)):
+        chain = ising.Metropolis(size=args.size, temperature=args.temperature[temp], field=args.field,
+                                 coupling=args.coupling, seed=args.seed)
+        np.random.seed(args.seed)
 
     # Skip the first burn_in samples so that the stationary distribution is reached
-    for _ in tqdm(range(args.burn_in), desc="Burn-in"):
-        chain.advance()
+        for _ in tqdm(range(args.burn_in), desc="MC: Burn-in"): chain.advance()
 
-    # Collect samples
-    for i in tqdm(range(args.length), desc="Simulation"):
-        chain.advance()
-        if i % args.frame_step == 0:
-            index = i // args.frame_step
-            energy[index] = chain.energy()
-            magnetization[index] = np.mean(chain.spins)
+        energy[temp] = chain.energy()
+        magnetization[temp] = np.mean(chain.spins)
+
+    return energy, magnetization
 
 
 def simulate(
-        size=3, temperature=1.0, field=0.0, coupling=1.0, burn_in=10,
+        size=3, temperature=np.array([0.5, 3]), field=0.0, coupling=1.0, burn_in=10,
         length=1000, seed=0, frame_step=1
 ):
+
     """Perform Metropolis sampling of an Ising chain
 
     The sample is output into a JSON file.
 
     Args:
         size (int): Chain size
-        temperature (float): Heat bath temperature
+        temperature (size): Heat bath temperature
         field (float): External magnetic field
         coupling (float): Spin coupling constant
         burn_in (int): Number of burn_in passes
-        length (int): Total length of the simulation
         seed (int): Random generator seed
-        frame_step (int): Number of steps between the sampled frames
     """
+    energy = np.empty(len(temperature))
+    magnetization = np.empty(len(temperature))
+    for temp in range(len(temperature)):
+        chain = ising.Metropolis(size=size, temperature=temperature[temp], field=field, coupling=coupling, seed=seed)
+        np.random.seed(seed)
 
-    chain = ising.Metropolis(
-        size=size, temperature=temperature, field=field, coupling=coupling
-    )
-    np.random.seed(seed)
-    energy = np.empty(length // frame_step)
-    magnetization = np.empty_like(energy)
+        # Skip the first burn_in samples so that the stationary distribution is reached
+        for _ in tqdm(range(burn_in), desc="MC: Burn-in"): chain.advance()
 
-    # Skip the first burn_in samples so that the stationary distribution is reached
-    for _ in tqdm(range(burn_in), desc="Burn-in"): chain.advance()
+        energy[temp] = chain.energy()
+        magnetization[temp] = np.mean(chain.spins)
 
-    # Collect samples
-    for i in tqdm(range(length), desc="Simulation MC"):
-        chain.advance()
-        if i % frame_step == 0:
-            index = i // frame_step
-            energy[index] = chain.energy()
-            magnetization[index] = np.mean(chain.spins)
     return energy, magnetization
 
-### Execute main script
 
+### Execute main script
 
 
 if __name__ == '__main__':
@@ -86,7 +76,7 @@ if __name__ == '__main__':
         '-N', dest='size', type=int, default=3, help="Chain size"
     )
     parser.add_argument(
-        '-T', dest='temperature', type=float, default=1.0,
+        '-T', dest='temperature', type=float, default=[0.5, 3.0],
         help="Temperature of the heat bath"
     )
     parser.add_argument(
@@ -100,17 +90,10 @@ if __name__ == '__main__':
         '-B', dest='burn_in', type=int, default=10,
         help="Number of burn-in passes"
     )
-    parser.add_argument(
-        '-l', dest='length', type=int, default=1000,
-        help="Length of output samples"
-    )
+
     parser.add_argument(
         '-S', dest='seed', type=int, default=0,
         help="Seed for the random number generator"
-    )
-    parser.add_argument(
-        '-f', dest='frame_step', type=int, default=1,
-        help="Frame step as a number of time steps"
     )
 
     main(parser.parse_args())

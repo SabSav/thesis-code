@@ -2,7 +2,6 @@
 import argparse
 import sys, os
 import numpy as np
-import datetime
 
 # Add code directory to the python path
 sys.path.append('code')
@@ -12,7 +11,7 @@ from theoretical_quantities import simulate as theory
 from alg2 import simulate as alg2
 size = 10
 lT = 0.5
-hT = 1
+hT = 2
 h = 0
 J = 1
 # action_rates = np.empty((size, 2))
@@ -31,7 +30,7 @@ action_rates = np.array([
 
 
 dt_lT = 0.1
-dt_hT = 0.04
+dt_hT = 0.02
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 cases = [
@@ -47,7 +46,7 @@ cases = [
      'output': f'{dir_path}/mc-lT.json'},
     {'method': mc, 'label': 'High-temperature sample from an MC simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'burn_in': 10000, 'length': 1000000, 'frame_step': 100,
+     'burn_in': 10000, 'length': 1000000, 'frame_step': 10,
      'output': f'{dir_path}/mc-hT.json'
      },
     {'method': alg1, 'label': 'Low-temperature sample from an A1 simulation',
@@ -59,7 +58,7 @@ cases = [
     {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': dt_hT,
-     'burn_in': 10000, 'length': 25000000, 'frame_step': 2500,
+     'burn_in': 10000, 'length': 50000000, 'frame_step': 500,
      'output': f'{dir_path}/a1-hT.json'
      },
     {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',

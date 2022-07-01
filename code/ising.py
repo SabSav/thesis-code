@@ -43,7 +43,11 @@ class Chain:
         self.coupling = coupling
         self.temperature = temperature
         self.field = field
-
+        if 'seed' in kwargs:
+            seed = kwargs['seed']
+            del kwargs['seed']
+        else:
+            seed = 1
         if 'spins' in kwargs:
             self.spins = np.asarray(kwargs['spins'])
             del kwargs['spins']
@@ -52,8 +56,7 @@ class Chain:
             if 'size' in kwargs:
                 size = kwargs['size']
                 del kwargs['size']
-            random_seed = 1
-            np.random.seed(random_seed)
+            np.random.seed(seed)
             self.spins = 2 * np.random.randint(2, size=size) - 1
         assert len(self.spins) >= 3
 

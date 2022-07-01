@@ -18,44 +18,36 @@ def main(args):
     Args:
         args: Parsed command-line arguments
     """
+    energy = np.empty(len(args.temperature))
+    magnetization = np.empty(len(args.temperature))
+    for temp in range(len(args.temperature)):
+        chain = ising.DynamicChain(size=args.size, temperature=args.temperature[temp], coupling=args.coupling,
+                                   field=args.field, action_rates=args.action_rates, dt=args.dt[temp])
+        np.random.seed(args.seed)
 
-    chain = ising.DynamicChain(size=args.size, temperature=args.temperature, coupling=args.coupling,
-                               field=args.field, action_rates=args.action_rates, dt=args.dt)
-    np.random.seed(args.seed)
-    energy = np.empty(args.length // args.frame_step)
-    magnetization = np.empty_like(energy)
+        for _ in tqdm(range(args.burn_in), desc="Alg1: Burn-in"): chain.advance()
 
-    for _ in tqdm(range(args.burn_in), desc="Burn-in"): chain.advance()
-    # Collect samples
-    for i in tqdm(range(args.length), desc="Simulation"):
-        chain.advance()
-        if i % args.frame_step == 0:
-            index = i // args.frame_step
-            energy[index] = chain.energy()
-            magnetization[index] = np.mean(chain.spins)
-
-    print(f"Simulations saved to {args.output}")
+        energy[temp] = chain.energy()
+        magnetization[temp] = np.mean(chain.spins)
+        # Collect samples
+    return energy, magnetization
 
 
 def simulate(
-        size=3, temperature=1.0, field=0.0, coupling=1.0, burn_in=10,
-        length=1000, seed=0, frame_step=1, action_rates=None, dt=None,
+        size=3, temperature=np.array([0.5, 3]), field=0.0, coupling=1.0, burn_in=10,
+        seed=0, action_rates=None, dt=np.array([0.1, 0.05]),
 ):
     """Perform sampling of an Ising chain simulated by the Algoirthm 1
 
     The sample is output into a JSON file.
 
     Args:
-        output (str): Path to the output file, which will be created or, if
-            exists, overwritten
         size (int): Chain size
         temperature (float): Heat bath temperature
         field (float): External magnetic field
         coupling (float): Spin coupling constant
         burn_in (int): Number of burn_in passes
-        length (int): Total length of the simulation
         seed (int): Random generator seed
-        frame_step (int): Number of steps between the sampled frames
         action_rates (int[]): Action rates of the spins
         :param burn_in:
         :param coupling:
@@ -70,26 +62,20 @@ def simulate(
         :param dt:
     """
 
-    chain = ising.DynamicChain(
-        size=size, temperature=temperature, coupling=coupling,
-        field=field, action_rates=action_rates, dt=dt
-    )
-    np.random.seed(seed)
-    energy = np.empty(length // frame_step)
-    magnetization = np.empty_like(energy)
+    energy = np.empty(len(temperature))
+    magnetization = np.empty(len(temperature))
+    for temp in range(len(temperature)):
+        chain = ising.DynamicChain(size=size, temperature=temperature[temp], coupling=coupling,
+                                   field=field, action_rates=action_rates, dt=dt[temp])
+        np.random.seed(seed)
 
-    # Relax initial configuration
-    for _ in tqdm(range(burn_in), desc="Burn-in"): chain.advance()
+        for _ in tqdm(range(burn_in), desc="Alg1: Burn-in"): chain.advance()
 
-    # Collect samples
-    for i in tqdm(range(length), desc="Simulation Alg1"):
-        chain.advance()
-        if i % frame_step == 0:
-            index = i // frame_step
-            energy[index] = chain.energy()
-            magnetization[index] = np.mean(chain.spins)
-
+        energy[temp] = chain.energy()
+        magnetization[temp] = np.mean(chain.spins)
+        # Collect samples
     return energy, magnetization
+
 
 ### Execute main script
 
@@ -101,7 +87,7 @@ if __name__ == '__main__':
         '-N', dest='size', type=int, default=3, help="Chain size"
     )
     parser.add_argument(
-        '-T', dest='temperature', type=float, default=1.0,
+        '-T', dest='temperature', type=float, default=np.array([0.5, 3]),
         help="Temperature of the heat bath"
     )
     parser.add_argument(
@@ -116,20 +102,13 @@ if __name__ == '__main__':
         help="Action rates"
     )
     parser.add_argument(
-        '-dt', dest='dt', type=float, default=0.1,
+        '-dt', dest='dt', type=float, default=np.array([0.1, 0.05]),
         help="Time interval"
     )
-    parser.add_argument(
-        '-l', dest='length', type=int, default=1000,
-        help="Length of output samples"
-    )
+
     parser.add_argument(
         '-S', dest='seed', type=int, default=0,
         help="Seed for the random number generator"
-    )
-    parser.add_argument(
-        '-f', dest='frame_step', type=int, default=1,
-        help="Frame step as a number of time steps"
     )
 
     main(parser.parse_args())
