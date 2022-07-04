@@ -26,7 +26,7 @@ def main(args):
         np.random.seed(args.seed)
 
     # Skip the first burn_in samples so that the stationary distribution is reached
-        for _ in tqdm(range(args.burn_in), desc="MC: Burn-in"): chain.advance()
+        for _ in tqdm(range(args.burn_in[temp]), desc="MC: Burn-in"): chain.advance()
 
         energy[temp] = chain.energy()
         magnetization[temp] = np.mean(chain.spins)
@@ -35,22 +35,10 @@ def main(args):
 
 
 def simulate(
-        size=3, temperature=np.array([0.5, 3]), field=0.0, coupling=1.0, burn_in=10,
-        length=1000, seed=0, frame_step=1
+        size=3, temperature=np.array([0.5, 3]), field=0.0, coupling=1.0, burn_in=np.array([10, 10]), seed=0
 ):
 
-    """Perform Metropolis sampling of an Ising chain
 
-    The sample is output into a JSON file.
-
-    Args:
-        size (int): Chain size
-        temperature (size): Heat bath temperature
-        field (float): External magnetic field
-        coupling (float): Spin coupling constant
-        burn_in (int): Number of burn_in passes
-        seed (int): Random generator seed
-    """
     energy = np.empty(len(temperature))
     magnetization = np.empty(len(temperature))
     for temp in range(len(temperature)):
@@ -58,7 +46,7 @@ def simulate(
         np.random.seed(seed)
 
         # Skip the first burn_in samples so that the stationary distribution is reached
-        for _ in tqdm(range(burn_in), desc="MC: Burn-in"): chain.advance()
+        for _ in tqdm(range(burn_in[temp]), desc="MC: Burn-in"): chain.advance()
 
         energy[temp] = chain.energy()
         magnetization[temp] = np.mean(chain.spins)
@@ -87,7 +75,7 @@ if __name__ == '__main__':
         help="Interaction term"
     )
     parser.add_argument(
-        '-B', dest='burn_in', type=int, default=10,
+        '-B', dest='burn_in', type=int, default=np.array([10, 10]),
         help="Number of burn-in passes"
     )
 

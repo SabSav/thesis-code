@@ -53,7 +53,7 @@ def simulate(
     np.random.seed(seed)
     energy = np.empty(length[0] // frame_step[0] + length[1] // frame_step[1])
     # Skip the first burn_in samples so that the stationary distribution is reached
-    for _ in tqdm(range(burn_in), desc="Burn-in"): chain.advance()
+    for _ in tqdm(range(burn_in), desc="MC: Burn-in"): chain.advance()
 
     for i in tqdm(range(length[0]), desc="MC: Simulation temperature T0"):
         chain.advance()

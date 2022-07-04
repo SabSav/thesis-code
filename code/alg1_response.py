@@ -20,7 +20,7 @@ def main(args):
     """
 
     chain = ising.DynamicChain(size=args.size, temperature=args.temperature[0], coupling=args.coupling,
-                               field=args.field, action_rates=args.action_rates, dt=args.dt[0], seed=args.seed)
+                               field=args.field, action_rates=args.action_rates, dt=args.dt, seed=args.seed)
     np.random.seed(args.seed)
     energy = np.empty(args.length[0] // args.frame_step[0] + args.length[1] // args.frame_step[1])
 
@@ -34,7 +34,6 @@ def main(args):
                 energy[index] = chain.energy()
 
     chain.temperature = args.temperature[1]
-    chain.dt = args.dt[1]
     for t in tqdm(range(args.length[1]), desc="Alg1: Simulation temperature T"):
         chain.advance()
         if t % args.frame_step[1] == 0:
@@ -45,11 +44,11 @@ def main(args):
 
 def simulate(
         size=3, temperature=np.array([1.0, 1.1]), field=0.0, coupling=1.0, burn_in=100,
-        length=np.array([1000, 3000]), seed=0, frame_step=np.array([1, 3]), action_rates=None, dt=np.array([0.1, 0.05]),
+        length=np.array([1000, 3000]), seed=0, frame_step=np.array([1, 3]), action_rates=None, dt=0.1,
 ):
 
     chain = ising.DynamicChain(size=size, temperature=temperature[0], coupling=coupling,
-                               field=field, action_rates=action_rates, dt=dt[0], seed=seed)
+                               field=field, action_rates=action_rates, dt=dt, seed=seed)
     np.random.seed(seed)
     energy = np.empty(length[0] // frame_step[0] + length[1] // frame_step[1])
 
@@ -63,7 +62,6 @@ def simulate(
                 energy[index] = chain.energy()
 
     chain.temperature = temperature[1]
-    chain.dt = dt[1]
     for t in tqdm(range(length[1]), desc="Alg1: Simulation temperature T"):
         chain.advance()
         if t % frame_step[1] == 0:
@@ -97,7 +95,7 @@ if __name__ == '__main__':
         help="Action rates"
     )
     parser.add_argument(
-        '-dt', dest='dt', type=float, default=np.array([0.1, 0.05]),
+        '-dt', dest='dt', type=float, default=0.1,
         help="Time interval"
     )
     parser.add_argument(

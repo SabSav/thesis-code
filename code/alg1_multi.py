@@ -25,7 +25,7 @@ def main(args):
                                    field=args.field, action_rates=args.action_rates, dt=args.dt[temp])
         np.random.seed(args.seed)
 
-        for _ in tqdm(range(args.burn_in), desc="Alg1: Burn-in"): chain.advance()
+        for _ in tqdm(range(args.burn_in[temp]), desc="Alg1: Burn-in"): chain.advance()
 
         energy[temp] = chain.energy()
         magnetization[temp] = np.mean(chain.spins)
@@ -34,33 +34,9 @@ def main(args):
 
 
 def simulate(
-        size=3, temperature=np.array([0.5, 3]), field=0.0, coupling=1.0, burn_in=10,
+        size=3, temperature=np.array([0.5, 3]), field=0.0, coupling=1.0, burn_in=np.array([10, 10]),
         seed=0, action_rates=None, dt=np.array([0.1, 0.05]),
 ):
-    """Perform sampling of an Ising chain simulated by the Algoirthm 1
-
-    The sample is output into a JSON file.
-
-    Args:
-        size (int): Chain size
-        temperature (float): Heat bath temperature
-        field (float): External magnetic field
-        coupling (float): Spin coupling constant
-        burn_in (int): Number of burn_in passes
-        seed (int): Random generator seed
-        action_rates (int[]): Action rates of the spins
-        :param burn_in:
-        :param coupling:
-        :param field:
-        :param temperature:
-        :param output:
-        :param size:
-        :param length:
-        :param seed:
-        :param frame_step:
-        :param action_rates:
-        :param dt:
-    """
 
     energy = np.empty(len(temperature))
     magnetization = np.empty(len(temperature))
@@ -69,7 +45,7 @@ def simulate(
                                    field=field, action_rates=action_rates, dt=dt[temp])
         np.random.seed(seed)
 
-        for _ in tqdm(range(burn_in), desc="Alg1: Burn-in"): chain.advance()
+        for _ in tqdm(range(burn_in[temp]), desc="Alg1: Burn-in"): chain.advance()
 
         energy[temp] = chain.energy()
         magnetization[temp] = np.mean(chain.spins)
@@ -96,6 +72,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '-J', dest='coupling', type=float, default=1.0,
         help="Interaction term"
+    )
+    parser.add_argument(
+        '-B', dest='burn_in', type=int, default=np.array([10, 10]),
+        help="Number of burn-in passes"
     )
     parser.add_argument(
         '-AR', dest='action_rates', type=float, default=np.full((3, 2), 1),

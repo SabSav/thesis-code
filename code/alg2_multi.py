@@ -22,13 +22,13 @@ def main(args):
     magnetization = np.empty(len(args.temperature))
     for temp in range(len(args.temperature)):
         chain = ising.ContinuousDynamic(size=args.size, temperature=args.temperature[temp], coupling=args.coupling,
-                                        field=args.field, action_rates=args.action_rates, dt=args.dt,
+                                        field=args.field, action_rates=args.action_rates, dt=args.dt[temp],
                                         random_times=args.random_times, seed=args.seed)
         np.random.seed(args.seed)
 
         for spin in range(args.size): chain.random_times = chain.set_random_times(spin)
 
-        for _ in tqdm(range(args.burn_in), desc="Alg2:Burn-in"): chain.advance()
+        for _ in tqdm(range(args.burn_in[temp]), desc="Alg2:Burn-in"): chain.advance()
 
         energy[temp] = chain.energy()
         magnetization[temp] = np.mean(chain.spins)
@@ -37,34 +37,20 @@ def main(args):
 
 
 def simulate(
-        size=3, temperature=np.array([1.0, 1.1]), field=0.0, coupling=1.0, burn_in=10,
-        seed=0, action_rates=None, dt=10,
+        size=3, temperature=np.array([1.0, 1.1]), field=0.0, coupling=1.0, burn_in=np.array([10, 10]),
+        seed=0, action_rates=None, dt=np.array([0.1, 0.05]),
 ):
-    """Perform sampling of an Ising chain simulated by the Algoirthm 2
-
-    The sample is output into a JSON file.
-
-    Args:
-        output (str): Path to the output file, which will be created or, if
-            exists, overwritten
-        size (int): Chain size
-        field (float): External magnetic field
-        coupling (float): Spin coupling constant
-        burn_in (int): Number of burn_in passes
-        seed (int): Random generator seed
-        action_rates (int[]): Action rates of the spins
-    """
 
     energy = np.empty(len(temperature))
     magnetization = np.empty(len(temperature))
     for temp in range(len(temperature)):
         chain = ising.ContinuousDynamic(size=size, temperature=temperature[temp], coupling=coupling,
-                                        field=field, action_rates=action_rates, dt=dt, seed=seed)
+                                        field=field, action_rates=action_rates, dt=dt[temp], seed=seed)
         np.random.seed(seed)
 
         for spin in range(size): chain.random_times = chain.set_random_times(spin)
 
-        for _ in tqdm(range(burn_in), desc="Alg2:Burn-in"): chain.advance()
+        for _ in tqdm(range(burn_in[temp]), desc="Alg2:Burn-in"): chain.advance()
 
         energy[temp] = chain.energy()
         magnetization[temp] = np.mean(chain.spins)
@@ -92,11 +78,15 @@ if __name__ == '__main__':
         help="Interaction term"
     )
     parser.add_argument(
+        '-B', dest='burn_in', type=int, default=np.array([10, 10]),
+        help="Number of burn-in passes"
+    )
+    parser.add_argument(
         '-AR', dest='action_rates', type=float, default=np.full((3, 2), 1),
         help="Action rates"
     )
     parser.add_argument(
-        '-dt', dest='dt', type=float, default=0.1,
+        '-dt', dest='dt', type=float, default=np.array([0.1, 0.05]),
         help="Time interval"
     )
 

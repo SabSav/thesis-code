@@ -1,8 +1,9 @@
 """Testing MC and A1 with three spins"""
 import argparse, json
 import sys, os
+
+from tqdm.contrib import itertools
 import numpy as np
-import tqdm
 # Add code directory to the python path
 sys.path.append('code')
 from mc_multi import simulate as mc
@@ -20,10 +21,10 @@ action_rates = np.array([
 ])
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-burn_in_mc = np.array([500000, 520000])
-burn_in_alg1 = np.array([600000, 1000000])
-burn_in_alg2 = np.array([500000, 500000])
-dt_alg2 = np.array([1, 1.5])
+burn_in_mc = np.array([500000, 200000])
+burn_in_alg1 = np.array([5000000, 1000000])
+burn_in_alg2 = np.array([500000, 200000])
+dt_alg2 = np.array([1, 1])
 dts = np.array([0.1, 0.05])
 lT = 0.5
 hT = 2
@@ -51,14 +52,14 @@ def merge(simulation, alg, burn_in):
         if temperatures[temp] == lT:
             dict = {"coupling": J, "temperature": lT, "field": h, "number of spins": size,
                     "energy_sample": engy[:, temp].tolist(), "magnetization_sample": m[:, temp].tolist(),
-                    "burn-in": int(burn_in[temp])}
+                    "burn-in": burn_in[temp]}
             filenamelT = f'{filename}-lT.json'
             with open(filenamelT, 'w') as file:
                 json.dump(dict, file)
         elif temperatures[temp] == hT:
             dict = {"coupling": J, "temperature": hT, "field": h, "number of spins": size,
                     "energy_sample": engy[:, temp].tolist(), "magnetization_sample": m[:, temp].tolist(),
-                    "burn-in": int(burn_in[temp])}
+                    "burn-in": burn_in[temp]}
             filenamehT = f'{filename}-hT.json'
             with open(filenamehT, 'w') as file:
                 json.dump(dict, file)

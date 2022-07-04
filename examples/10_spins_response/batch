@@ -18,7 +18,7 @@ module purge
 source /g/erzberger/savino/miniconda3/etc/profile.d/conda.sh # NB!
 conda activate
 
-python examples/10_spins_multi/run10multi.py
+python examples/10_spins_response/run10response.py
 
 # Epilogue
 duration=$SECONDS

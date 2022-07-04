@@ -1,11 +1,3 @@
-"""Algorithm 2 simulation of a one-dimensional Ising model
-
-This script performs the continuous dynamic simulation of an Ising chain and outputs parameters
-of the simulation together with a sample of energy and average magnetization into
-a given file in the JSON format.
-
-Usage: python code/alg2.py -h
-"""
 import argparse
 import numpy as np
 from tqdm import tqdm
@@ -13,11 +5,6 @@ import ising
 
 
 def main(args):
-    """Perform Alg2 sampling of an Ising chain
-
-    Args:
-        args: Parsed command-line arguments
-    """
 
     chain = ising.ContinuousDynamic(size=args.size, temperature=args.temperature[0], coupling=args.coupling,
                                     field=args.field, action_rates=args.action_rates, dt=args.dt[0], seed=args.seed)

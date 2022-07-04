@@ -69,8 +69,8 @@ cases = [
      },
     {'method': alg2, 'label': 'High-temperature sample from an A2 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': 250,
-     'burn_in': 10000, 'length': 25000000, 'frame_step': 250,
+     'action_rates': action_rates, 'dt': 300,
+     'burn_in': 10000, 'length': 30000000, 'frame_step': 300,
      'output': f'{dir_path}/a2-hT.json'
      }
 ]
