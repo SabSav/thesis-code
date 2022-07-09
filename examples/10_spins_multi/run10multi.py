@@ -20,11 +20,11 @@ action_rates = np.array([
 ])
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
-burn_in_mc = np.array([500000, 520000])
-burn_in_alg1 = np.array([600000, 1000000])
-burn_in_alg2 = np.array([500000, 500000])
-dt_alg2 = np.array([1, 1.5])
-dts = np.array([0.1, 0.05])
+burn_in_mc = np.array([1000000, 1400000])
+burn_in_alg1 = np.array([1200000, 1200000])
+burn_in_alg2 = np.array([1000000, 1000000])
+dt_alg2 = np.array([2.0, 5.0])
+dts = np.array([0.1, 0.04])
 lT = 0.5
 hT = 2
 temperatures = np.array([lT, hT])
@@ -80,13 +80,13 @@ theory_cases = [
 if __name__ == '__main__':
 
     with(Pool(processes=128)) as pool:
-        sim_mc = pool.map(mc_seed, range(1000))
-        sim_alg1 = pool.map(alg1_seed, range(1000))
-        sim_alg2 = pool.map(alg2_seed, range(1000))
+        sim_mc = pool.map(mc_seed, range(10000))
+        sim_alg1 = pool.map(alg1_seed, range(10000))
+        #sim_alg2 = pool.map(alg2_seed, range(10000))
 
     merge(sim_mc, 'mc', burn_in_mc)
     merge(sim_alg1, 'a1', burn_in_alg1)
-    merge(sim_alg2, 'a2', burn_in_alg2)
+    #merge(sim_alg2, 'a2', burn_in_alg2)
 
     parser = argparse.ArgumentParser(description=__doc__)
 
