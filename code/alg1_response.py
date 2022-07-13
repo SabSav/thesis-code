@@ -1,32 +1,37 @@
-"""Algorithm 1 simulation of a one-dimensional Ising model
+"""Monte Carlo simulation of a one-dimensional Ising model
 
-This script performs the dynamic simulation of an Ising chain and outputs parameters
+This script performs a Metropolis sampling of an Ising chain and outputs parameters
 of the simulation together with a sample of energy and average magnetization into
 a given file in the JSON format.
 
 Usage: python code/mc.py -h
 """
 import argparse
+from itertools import repeat
+from multiprocessing import Pool
 import numpy as np
-from tqdm import tqdm
+import tqdm
+import json
 import ising
 
 
 def main(args):
-    """Perform Metropolis sampling of an Ising chain
+    """@deprecated Perform Metropolis sampling of an Ising chain
 
     Args:
         args: Parsed command-line arguments
     """
 
-    chain = ising.DynamicChain(size=args.size, temperature=args.temperature[0], coupling=args.coupling,
-                               field=args.field, action_rates=args.action_rates, dt=args.dt, seed=args.seed)
+    if __name__ == '__main__':
+        chain = ising.DynamicChain(size=args.size, temperature=args.temperature[0], field=args.field,
+                                   coupling=args.coupling, action_rates=args.action_rates, dt=args.dt[0],
+                                   seed=args.seed)
     np.random.seed(args.seed)
     energy = np.empty(args.length[0] // args.frame_step[0] + args.length[1] // args.frame_step[1])
+    # Skip the first burn_in samples so that the stationary distribution is reached
+    for _ in tqdm.tqdm(range(args.burn_in), desc="Burn-in Alg1"): chain.advance()
 
-    for _ in tqdm(range(args.burn_in), desc="Alg1: Burn-in"): chain.advance()
-    # Collect samples
-    for i in tqdm(range(args.length[0]), desc="Alg1: Simulation temperature T0"):
+    for i in tqdm.tqdm(range(args.length[0]), desc="Simulation T0 Alg1"):
         chain.advance()
         if i < args.length[0]:  # Collect samples for T = T0
             if i % args.frame_step[0] == 0:
@@ -34,27 +39,27 @@ def main(args):
                 energy[index] = chain.energy()
 
     chain.temperature = args.temperature[1]
-    for t in tqdm(range(args.length[1]), desc="Alg1: Simulation temperature T"):
+    chain.dt = args.dt[1]
+    for t in tqdm.tqdm(range(args.length[1]), desc="Simulation T Alg1"):
         chain.advance()
         if t % args.frame_step[1] == 0:
-            indexT = t // args.frame_step[0]
-            energy[indexT + index] = chain.energy()
+            indexT = t // args.frame_step[1]
+            energy[indexT + index + 1] = chain.energy()
+
     return energy
 
 
 def simulate(
-        size=3, temperature=np.array([1.0, 1.1]), field=0.0, coupling=1.0, burn_in=100,
-        length=np.array([1000, 3000]), seed=0, frame_step=np.array([1, 3]), action_rates=None, dt=0.1,
+        seed, size, temperature, field, coupling, action_rates, dt, burn_in, length, frame_step
 ):
-
-    chain = ising.DynamicChain(size=size, temperature=temperature[0], coupling=coupling,
-                               field=field, action_rates=action_rates, dt=dt, seed=seed)
+    chain = ising.DynamicChain(size=size, temperature=temperature[0], field=field, coupling=coupling,
+                               seed=seed, action_rates=action_rates, dt=dt[0])
     np.random.seed(seed)
     energy = np.empty(length[0] // frame_step[0] + length[1] // frame_step[1])
+    # Skip the first burn_in samples so that the stationary distribution is reached
+    for _ in tqdm.tqdm(range(burn_in), desc="Burn-in Alg1"): chain.advance()
 
-    for _ in tqdm(range(burn_in), desc="Alg1: Burn-in"): chain.advance()
-
-    for i in tqdm(range(length[0]), desc="Alg1: Simulation temperature T0"):
+    for i in tqdm.tqdm(range(length[0]), desc="Simulation T0 Alg1"):
         chain.advance()
         if i < length[0]:  # Collect samples for T = T0
             if i % frame_step[0] == 0:
@@ -62,20 +67,38 @@ def simulate(
                 energy[index] = chain.energy()
 
     chain.temperature = temperature[1]
-    for t in tqdm(range(length[1]), desc="Alg1: Simulation temperature T"):
+    chain.dt = dt[1]
+    for t in tqdm.tqdm(range(length[1]), desc="Simulation T Alg1"):
         chain.advance()
         if t % frame_step[1] == 0:
             indexT = t // frame_step[1]
-            energy[indexT + index] = chain.energy()
+            energy[indexT + index + 1] = chain.energy()
 
     return energy
 
-### Execute main script
+
+def avg_trajectory(output, size, temperature, field, coupling, action_rates, dt, burn_in, length, frame_step):
+    np.random.seed(0)
+    seed = [np.random.randint(0, 2 ** 32 - 1) for _ in range(1000)]
+    with Pool(processes=128) as pool:
+        simulation = np.array(
+            pool.starmap(simulate, zip(seed, repeat(size), repeat(temperature), repeat(field),
+                                       repeat(coupling), repeat(action_rates), repeat(dt), repeat(burn_in),
+                                       repeat(length), repeat(frame_step))))
+    engy = np.mean(simulation, axis=0)
+    dict = {"coupling": coupling, 'T0': temperature[0], 'T': temperature[-1], 'field': field, "number of spins": size,
+            "burn-in": burn_in, "length temperature T0": int(length[0]),
+            "frame_step temperature T0": int(frame_step[0]), "length temperature T": int(length[-1]),
+            "frame_step temperature T": int(frame_step[-1]), "Energy difference": engy.tolist()}
+    with open(output, 'w') as file:
+        json.dump(dict, file)
+    print(f"Simulations saved to {output}")
 
 
 if __name__ == '__main__':
     # Prepare arguments
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('output', type=str, help="Name of the output file")
     parser.add_argument(
         '-N', dest='size', type=int, default=3, help="Chain size"
     )
@@ -95,8 +118,12 @@ if __name__ == '__main__':
         help="Action rates"
     )
     parser.add_argument(
-        '-dt', dest='dt', type=float, default=0.1,
+        '-dt', dest='dt', type=float, default=np.array([0.1, 0.05]),
         help="Time interval"
+    )
+    parser.add_argument(
+        '-B', dest='burn_in', type=int, default=10,
+        help="Number of burn-in passes"
     )
     parser.add_argument(
         '-l', dest='length', type=int, default=np.array([1000, 3000]),

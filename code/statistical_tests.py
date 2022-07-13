@@ -18,6 +18,8 @@ def equilibrate_counts(dict_a, dict_b):
     dict_a = OrderedDict(sorted(dict_a.items()))
     dict_b = OrderedDict(sorted(dict_b.items()))
 
+    return dict_a, dict_b
+
 
 def one_sample_chi_squared(probabilities, counts):
     """Chi-squared test with one sample from a multinomial distribution

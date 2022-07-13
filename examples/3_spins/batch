@@ -22,7 +22,7 @@ python examples/3_spins/run.py -i "[${SLURM_ARRAY_TASK_ID}]"
 
 # Epilogue
 duration=$SECONDS
-days=$((duration / 86400))w
+days=$((duration / 86400))
 hours=$((duration % 86400 / 3600))
 minutes=$((duration % 3600 / 60))
 seconds=$((duration % 60))

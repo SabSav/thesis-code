@@ -30,7 +30,7 @@ action_rates = np.array([
 
 
 dt_lT = 0.1
-dt_hT = 0.001
+dt_hT = 1e-4
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 cases = [
@@ -42,35 +42,35 @@ cases = [
      'output': f'{dir_path}/theory-hT.json'},
     {'method': mc, 'label': 'Low-temperature sample from an MC simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
-     'burn_in': 10, 'length': 50000, 'frame_step': 1,
+     'burn_in': 10, 'length': 10000, 'frame_step': 1,
      'output': f'{dir_path}/mc-lT.json'},
     {'method': mc, 'label': 'High-temperature sample from an MC simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'burn_in': 10, 'length': 50000, 'frame_step': 1,
+     'burn_in': 10, 'length': 10000, 'frame_step': 1,
      'output': f'{dir_path}/mc-hT.json'
      },
     {'method': alg1, 'label': 'Low-temperature sample from an A1 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': dt_lT,
-     'burn_in': 10, 'length': 500000, 'frame_step': 10,
+     'burn_in': 10, 'length': 100000, 'frame_step': 10,
      'output': f'{dir_path}/a1-lT.json'
      },
     {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': dt_hT,
-     'burn_in': 10, 'length': 50000000, 'frame_step': 1000,
+     'burn_in': 10, 'length': 100000000, 'frame_step': 10000,
      'output': f'{dir_path}/a1-hT.json'
      },
     {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': 1,
-     'burn_in': 10, 'length': 50000, 'frame_step': 1,
+     'burn_in': 10, 'length': 10000, 'frame_step': 1,
      'output': f'{dir_path}/a2-lT.json'
      },
     {'method': alg2, 'label': 'High-temperature sample from an A2 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': 1,
-     'burn_in': 10, 'length': 50000, 'frame_step': 1,
+     'burn_in': 10, 'length': 10000, 'frame_step': 1,
      'output': f'{dir_path}/a2-hT.json'
      }
 ]

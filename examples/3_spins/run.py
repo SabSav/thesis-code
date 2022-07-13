@@ -11,7 +11,7 @@ from theoretical_quantities import simulate as theory
 
 size = 3
 lT = 0.5
-hT = 2
+hT = 3
 h = 0
 J = 1
 # action_rates = np.empty((size, 2))
@@ -28,8 +28,8 @@ action_rates = np.array([
     for i in range(size)
 ])
 
-dt_lT = 0.05
-dt_hT = 0.01
+dt_lT = 0.1
+dt_hT = 0.05
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -52,13 +52,13 @@ cases = [
     {'method': alg1, 'label': 'Low-temperature sample from an A1 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': dt_lT,
-     'burn_in': 10000, 'length': 20000000, 'frame_step': 200,
+     'burn_in': 10000, 'length': 10000000, 'frame_step': 100,
      'output': f'{dir_path}/a1-lT-{h}.json'
      },
     {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': dt_hT,
-     'burn_in': 10000, 'length': 100000000, 'frame_step': 1000,
+     'burn_in': 10000, 'length': 20000000, 'frame_step': 200,
      'output': f'{dir_path}/a1-hT-{h}.json'
      },
     {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',

@@ -226,7 +226,7 @@ class ContinuousDynamic(DynamicChain):
             prob_change = weight / (1 + weight)
             if prob_change > np.random.random():
                 self.spins[spin_to_change] *= -1
-            spin_to_change = np.argmin(self.random_times) # updated here
+            spin_to_change = np.argmin(self.random_times)  # updated here
 
         self.random_times -= self.dt - internal_time
 
