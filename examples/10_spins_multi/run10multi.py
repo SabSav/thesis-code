@@ -6,9 +6,9 @@ from itertools import repeat
 import numpy as np
 # Add code directory to the python path
 sys.path.append('code')
-from mc_multi import merge as mc
-from alg1_multi import merge as alg1
-from alg2_multi import merge as alg2
+from mc_multi import write_file as mc
+from alg1_multi import write_file as alg1
+from alg2_multi import write_file as alg2
 from theoretical_quantities import simulate as theory
 
 
@@ -32,25 +32,25 @@ cases = [
      'output': f'{dir_path}/theory-hT.json'},
     {'method': mc, 'label': 'Low-temperature sample from an MC simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
-     'burn_in': 200, 'output': f'{dir_path}/mc-lT.json'},
+     'burn_in': 2000, 'output': f'{dir_path}/mc-lT.json'},
     {'method': mc, 'label': 'High-temperature sample from an MC simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'burn_in': 80, 'output': f'{dir_path}/mc-hT.json'},
+     'burn_in': 100, 'output': f'{dir_path}/mc-hT.json'},
     {'method': alg1, 'label': 'Low-temperature sample from an A1 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
      'action_rates': action_rates, 'dt': 0.1, 'burn_in': 6000,
      'output': f'{dir_path}/a1-lT.json'},
     {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': 1e-4, 'burn_in': 750000,
+     'action_rates': action_rates, 'dt': 1e-4, 'burn_in': 1500000,
      'output': f'{dir_path}/a1-hT.json'},
     {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': 100, 'burn_in': 600,
+     'action_rates': action_rates, 'dt': 1.0, 'burn_in': 1000,
      'output': f'{dir_path}/a2-lT.json'},
     {'method': alg2, 'label': 'High-temperature sample from an A1 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': 70, 'burn_in': 70,
+     'action_rates': action_rates, 'dt': 1.0, 'burn_in': 220,
      'output': f'{dir_path}/a2-hT.json'}
 
 ]
@@ -65,7 +65,7 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    for case in eval(f'np.asarray(cases)[{args.cases}]'):
+    for case in eval(f'np.array(cases)[{args.cases}]'):
         kwargs = case.copy()
         method = kwargs.pop('method')
         print(kwargs.pop('label'))
