@@ -30,12 +30,23 @@ def main(args):
 
     for _ in tqdm(range(args.burn_in), desc="Burn-in"): chain.advance()
 
+    chain.nFlip = 0
     for t in tqdm(range(args.length), desc="Simulation"):
         chain.advance()
         if t % args.frame_step == 0:
             index = t // args.frame_step
             energy[index] = chain.energy()
             magnetization[index] = np.mean(chain.spins)
+
+    bundle = chain.export_dict()
+    bundle['Number of flip'] = chain.nFlip
+    bundle['energy_sample'] = energy.tolist()
+    bundle['magnetization_sample'] = magnetization.tolist()
+    bundle['length of simulation'] = args.length
+    bundle['frame_step'] = args.frame_step
+    with open(args.output, 'w') as file:
+        json.dump(bundle, file)
+    print(f"Simulations saved to {args.output}")
 
 
 def simulate(
@@ -70,6 +81,7 @@ def simulate(
 
     for _ in tqdm(range(burn_in), desc="Burn-in"): chain.advance()
 
+    chain.nFlip = 0
     for t in tqdm(range(length), desc="Simulation"):
         chain.advance()
         if t % frame_step == 0:
@@ -78,6 +90,7 @@ def simulate(
             magnetization[index] = np.mean(chain.spins)
 
     bundle = chain.export_dict()
+    bundle['Number of flip'] = chain.nFlip
     bundle['energy_sample'] = energy.tolist()
     bundle['magnetization_sample'] = magnetization.tolist()
     bundle['length of simulation'] = length

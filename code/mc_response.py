@@ -7,12 +7,12 @@ a given file in the JSON format.
 Usage: python code/mc.py -h
 """
 import argparse
-from itertools import repeat
-from multiprocessing import Pool
+
+import ising
+from mc_multi import merge as mc_multi
 import numpy as np
 import tqdm
 import json
-import ising
 
 
 def main(args):
@@ -21,73 +21,88 @@ def main(args):
     Args:
         args: Parsed command-line arguments
     """
-
-    chain = ising.Metropolis(size=args.size, temperature=args.temperature[0], field=args.field, coupling=args.coupling,
-                             seed=args.seed)
-    np.random.seed(args.seed)
-    energy = np.empty(args.length[0] // args.frame_step[0] + args.length[1] // args.frame_step[1])
-    # Skip the first burn_in samples so that the stationary distribution is reached
-    for _ in tqdm.tqdm(range(args.burn_in), desc="Burn-in MC"): chain.advance()
-
-    for i in tqdm.tqdm(range(args.length[0]), desc="Simulation T0 MC"):
-        chain.advance()
-        if i < args.length[0]:  # Collect samples for T = T0
+    engy0, m0, spins = mc_multi(size=args.size, temperature=args.temperature[0], field=args.field,
+                                coupling=args.coupling, burn_in=args.burn_in)
+    chain = ising.Metropolis(size=args.size, temperature=args.temperature[0], field=args.field,
+                             coupling=args.coupling)
+    np.random.seed(0)
+    engy_T0 = np.empty(shape=(len(engy0), args.length[0] // args.frame_step[0]))
+    engy_T = np.empty(shape=(len(engy0), args.length[1] // args.frame_step[1]))
+    for traj in range(len(engy0)):
+        chain.temperature = args.temperature[0]
+        engy_T0[traj, 0] = engy0[traj]
+        for i in tqdm.tqdm(range(1, args.length[0]), desc="Simulation T0 MC"):
+            chain.spins = spins[traj]
+            chain.advance()
             if i % args.frame_step[0] == 0:
                 index = i // args.frame_step[0]
-                energy[index] = chain.energy()
+                engy_T0[traj, index + 1] = chain.energy()
+        chain.temperature = args.temperature[1]
+        for t in tqdm.tqdm(range(args.length[1]), desc="Simulation T MC"):
+            chain.advance()
+            if t % args.frame_step[1] == 0:
+                index = t // args.frame_step[1]
+                engy_T[traj, index] = chain.energy()
 
-    chain.temperature = args.temperature[1]
-    for t in tqdm.tqdm(range(args.length[1]), desc="Simulation T MC"):
-        chain.advance()
-        if t % args.frame_step[1] == 0:
-            indexT = t // args.frame_step[1]
-            energy[indexT + index + 1] = chain.energy()
+    engy = np.concatenate((engy_T0, engy_T), axis=1)
+    std_engy = np.std(engy, axis=0)
+    engy = np.mean(engy, axis=0)
 
-    return energy
+
+    bundle = chain.export_dict()
+    del bundle['temperature']
+    bundle['T0'] = float(args.temperature[0])
+    bundle['T'] = float(args.temperature[1])
+    bundle['Length T0'] = int(args.length[0])
+    bundle['Length T'] = int(args.length[1])
+    bundle['frame_step T0'] = int(args.frame_step[0])
+    bundle['frame_step T'] = int(args.frame_step[1])
+    bundle['energy_sample'] = engy.tolist()
+    bundle['std_engy'] = std_engy.tolist()
+    with open(args.output, 'w') as file:
+        json.dump(bundle, file)
+    print(f"Simulations saved to {args.output}")
 
 
 def simulate(
-        seed, size, temperature, field, coupling, burn_in, length, frame_step
+        output, size, temperature, field, coupling, burn_in, length, frame_step
 ):
-    chain = ising.Metropolis(size=size, temperature=temperature[0], field=field, coupling=coupling,
-                             seed=seed)
-    np.random.seed(seed)
-    energy = np.empty(length[0] // frame_step[0] + length[1] // frame_step[1])
-    # Skip the first burn_in samples so that the stationary distribution is reached
-    for _ in tqdm.tqdm(range(burn_in), desc="Burn-in MC"): chain.advance()
-
-    for i in tqdm.tqdm(range(length[0]), desc="Simulation T0 MC"):
-        chain.advance()
-        if i < length[0]:  # Collect samples for T = T0
+    engy0, m0, spins = mc_multi(size=size, temperature=temperature[0], field=field, coupling=coupling, burn_in=burn_in)
+    chain = ising.Metropolis(size=size, temperature=temperature[0], field=field, coupling=coupling)
+    engy_T0 = np.empty(shape=(len(engy0), length[0] // frame_step[0]))
+    engy_T = np.empty(shape=(len(engy0), length[1] // frame_step[1]))
+    for traj in range(len(engy0)):
+        chain.temperature = temperature[0]
+        engy_T0[traj, 0] = engy0[traj]
+        for i in tqdm.tqdm(range(1, length[0]), desc="Simulation T0 MC"):
+            chain.spins = spins[traj]
+            chain.advance()
             if i % frame_step[0] == 0:
                 index = i // frame_step[0]
-                energy[index] = chain.energy()
+                engy_T0[traj, index] = chain.energy()
+        chain.temperature = temperature[1]
+        for t in tqdm.tqdm(range(length[1]), desc="Simulation T MC"):
+            chain.advance()
+            if t % frame_step[1] == 0:
+                index = t // frame_step[1]
+                engy_T[traj, index] = chain.energy()
 
-    chain.temperature = temperature[1]
-    for t in tqdm.tqdm(range(length[1]), desc="Simulation T MC"):
-        chain.advance()
-        if t % frame_step[1] == 0:
-            indexT = t // frame_step[1]
-            energy[indexT + index + 1] = chain.energy()
+    engy = np.concatenate((engy_T0, engy_T), axis=1)
+    std_engy = np.std(engy, axis=0)
+    engy = np.mean(engy, axis=0)
 
-    return energy
-
-
-def avg_trajectory(output, size, temperature, field, coupling, burn_in, length, frame_step):
-    np.random.seed(0)
-    seed = [np.random.randint(0, 2 ** 32 - 1) for _ in range(1000)]
-    with Pool(processes=128) as pool:
-        simulation = np.array(
-            pool.starmap(simulate, zip(seed, repeat(size), repeat(temperature), repeat(field),
-                                                 repeat(coupling), repeat(burn_in), repeat(length),
-                                                 repeat(frame_step))))
-    engy = np.mean(simulation, axis=0)
-    dict = {"coupling": coupling, 'T0': temperature[0], 'T': temperature[-1], 'field': field, "number of spins": size,
-            "burn-in": burn_in, "length temperature T0": int(length[0]),
-            "frame_step temperature T0": int(frame_step[0]), "length temperature T": int(length[-1]),
-            "frame_step temperature T": int(frame_step[-1]), "Energy difference": engy.tolist()}
+    bundle = chain.export_dict()
+    del bundle['temperature']
+    bundle['T0'] = float(temperature[0])
+    bundle['T'] = float(temperature[1])
+    bundle['Length T0'] = int(length[0])
+    bundle['Length T'] = int(length[1])
+    bundle['frame_step T0'] = int(frame_step[0])
+    bundle['frame_step T'] = int(frame_step[1])
+    bundle['energy_sample'] = engy.tolist()
+    bundle['std_engy'] = std_engy.tolist()
     with open(output, 'w') as file:
-        json.dump(dict, file)
+        json.dump(bundle, file)
     print(f"Simulations saved to {output}")
 
 
@@ -122,7 +137,7 @@ if __name__ == '__main__':
         help="Seed for the random number generator"
     )
     parser.add_argument(
-        '-f', dest='frame_step', type=int, default=np.array([1, 3]),
+        '-f', dest='frame_step', type=int, default=np.array([1, 1]),
         help="Frame step as a number of time steps"
     )
 

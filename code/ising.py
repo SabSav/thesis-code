@@ -20,7 +20,7 @@ class Chain:
     # 1) init is used to create an object
     # 2) kwards is used to pass a dictionary
 
-    def __init__(self, coupling=1.0, temperature=1.0, field=0., **kwargs):
+    def __init__(self, coupling=1.0, temperature=1.0, field=0., nFlip=0.0, **kwargs):
         """Initialize an Ising chain
 
                 Args:
@@ -34,6 +34,7 @@ class Chain:
                     spins (array_like): When unspecified the chain of size `size` is
                         initialized with randomly assigned spin values. Otherwise the
                         chain size and the initial spin values are taken from `spins`.
+                    nFlip(int): number of spins that flips
 
                 Raises:
                     TypeError: When unknown argument is provided
@@ -43,6 +44,7 @@ class Chain:
         self.coupling = coupling
         self.temperature = temperature
         self.field = field
+        self.nFlip = nFlip
         if 'seed' in kwargs:
             seed = kwargs['seed']
             del kwargs['seed']
@@ -166,9 +168,9 @@ class DynamicChain(Chain):
             action_rates_ratio = self.action_rate(spin_to_change, -value) / self.action_rate(spin_to_change, value)
             weight = np.exp(-dE / self.temperature) * action_rates_ratio
             prob_change = self.dt * self.action_rate(spin_to_change, value) * weight / (1 + weight)
-
             rank = np.random.random()
             if prob_change > rank:
+                self.nFlip += 1
                 buffer[spin_to_change] = -1
         self.spins *= buffer
         return self.spins
@@ -225,6 +227,7 @@ class ContinuousDynamic(DynamicChain):
             weight = np.exp(-dE / self.temperature) * action_rates_ratio
             prob_change = weight / (1 + weight)
             if prob_change > np.random.random():
+                self.nFlip += 1
                 self.spins[spin_to_change] *= -1
             spin_to_change = np.argmin(self.random_times)  # updated here
 
@@ -245,6 +248,7 @@ class Metropolis(Chain):
             """
         for spin_to_change in np.random.permutation(np.arange(len(self.spins))):
             if np.random.random() < np.exp(- self.deltaE(spin_to_change) / self.temperature):
+                self.nFlip += 1
                 self.spins[spin_to_change] *= -1
         return self.spins
 
