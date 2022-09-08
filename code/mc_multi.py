@@ -48,17 +48,23 @@ def simulate(
 
     energy = chain.energy()
     magnetization = np.mean(chain.spins)
-    return energy, magnetization
+    return energy, magnetization, chain.spins
 
 
-def merge(output, size, temperature, field, coupling, burn_in):
+def merge(size, temperature, field, coupling, burn_in):
     np.random.seed(0)
-    seed = [np.random.randint(0, 2**32 - 1) for _ in range(10000)]
-    with Pool(processes=128) as pool:
+    seed = [np.random.randint(0, 2 ** 32 - 1) for _ in range(10000)]
+    with Pool(processes=1) as pool:
         simulation = pool.starmap(simulate, zip(seed, repeat(size), repeat(temperature), repeat(field),
-                                                          repeat(coupling), repeat(burn_in)))
-    engy, m = np.array([x for x in zip(*simulation)])
-    chain = ising.Metropolis(size=size, temperature=temperature, field=field, coupling=coupling)
+                                                repeat(coupling), repeat(burn_in)))
+    engy, m, spins = [x for x in zip(*simulation)]
+
+    return np.array(engy), np.array(m), np.array(spins)
+
+
+def write_file(output, size, temperature, field, coupling, burn_in):
+    engy, m, spins = merge(size, temperature, field, coupling, burn_in)
+    chain = ising.Chain(size=size, temperature=temperature, field=field, coupling=coupling)
     bundle = chain.export_dict()
     bundle["energy_sample"] = engy.tolist()
     bundle["magnetization_sample"] = m.tolist()

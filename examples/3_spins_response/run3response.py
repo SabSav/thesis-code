@@ -4,9 +4,9 @@ import sys, os
 import numpy as np
 # Add code directory to the python path
 sys.path.append('code')
-from mc_response import avg_trajectory as mc
-from alg1_response import avg_trajectory as alg1
-from alg2_response import avg_trajectory as alg2
+from mc_response import simulate as mc
+from alg1_response import simulate as alg1
+from alg2_response import simulate as alg2
 from theoretical_quantities import simulate as theory
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -18,7 +18,7 @@ action_rates = np.array([
     for i in range(size)
 ])
 lT = 0.5
-hT = 3.0
+hT = 1
 
 cases = [
     {'method': theory, 'label': f'Temperature {lT} Theory',
@@ -29,16 +29,16 @@ cases = [
      'output': f'{dir_path}/theory-hT.json'},
     {'method': mc, 'label': 'Response MC',
      'size': size, 'temperature': np.array([lT, hT]), 'field': h, 'coupling': J,
-     'burn_in': 10000, 'length': np.array([10000000, 100000000]), 'frame_step': np.array([100, 1000]),
+     'burn_in': 5500, 'length': np.array([500, 1000]), 'frame_step':np.array([10, 10]),
      'output': f'{dir_path}/mc-response.json'},
     {'method': alg1, 'label': 'Response Alg1',
      'size': size, 'temperature': np.array([lT, hT]), 'field': h, 'coupling': J, 'action_rates': action_rates,
-     'dt':np.array([0.1, 0.05]), 'burn_in': 10000, 'length': np.array([10000000, 20000000]),
-     'frame_step': np.array([100, 200]), 'output': f'{dir_path}/alg1-response.json'},
+     'dt':np.array([0.1, 0.1]), 'burn_in': 50000, 'length': np.array([500, 1000]),
+     'frame_step': np.array([10, 10]), 'output': f'{dir_path}/a1-response.json'},
     {'method': alg2, 'label': 'Response Alg1',
      'size': size, 'temperature': np.array([lT, hT]), 'field': h, 'coupling': J, 'action_rates': action_rates,
-     'dt':np.array([1000, 500]), 'burn_in': 10000, 'length': np.array([100000000, 50000000]),
-     'frame_step': np.array([1000, 500]), 'output': f'{dir_path}/alg2-response.json'}
+     'dt':np.array([10, 10]), 'burn_in': 8000, 'length': np.array([500, 1000]),
+     'frame_step': np.array([10, 10]), 'output': f'{dir_path}/a2-response.json'}
 
 ]
 

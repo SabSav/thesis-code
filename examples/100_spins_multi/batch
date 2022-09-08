@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH -p htc-el8 # partiion
 #SBATCH -J ising # Job name
+#SBATCH -a 0-7 #Job array
 #SBATCH -N 1 # Number of nodes
 #SBATCH -n 128 # Number of cpus in node
 #SBATCH --mem 8G
@@ -18,7 +19,7 @@ module purge
 source /g/erzberger/savino/miniconda3/etc/profile.d/conda.sh # NB!
 conda activate
 
-python examples/100_spins_multi/run100multi.py
+python examples/100_spins_multi/run100multi.py -i "[${SLURM_ARRAY_TASK_ID}]"
 
 # Epilogue
 duration=$SECONDS

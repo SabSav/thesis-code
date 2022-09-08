@@ -24,9 +24,9 @@ def main(args):
     np.random.seed(args.seed)
     energy = np.empty(args.length // args.frame_step)
     magnetization = np.empty_like(energy)
-
     for _ in tqdm(range(args.burn_in), desc="Burn-in"): chain.advance()
     # Collect samples
+    chain.nFlip = 0
     for i in tqdm(range(args.length), desc="Simulation"):
         chain.advance()
         if i % args.frame_step == 0:
@@ -35,6 +35,7 @@ def main(args):
             magnetization[index] = np.mean(chain.spins)
 
     bundle = chain.export_dict()
+    bundle['Number of flip'] = chain.nFlip
     bundle['energy_sample'] = energy.tolist()
     bundle['magnetization_sample'] = magnetization.tolist()
     with open(args.output, 'w') as file:
@@ -87,6 +88,7 @@ def simulate(
     for _ in tqdm(range(burn_in), desc="Burn-in"): chain.advance()
 
     # Collect samples
+    chain.nFlip = 0
     for i in tqdm(range(length), desc="Simulation"):
         chain.advance()
         if i % frame_step == 0:
@@ -95,6 +97,7 @@ def simulate(
             magnetization[index] = np.mean(chain.spins)
 
     bundle = chain.export_dict()
+    bundle['Number of flip'] = chain.nFlip
     bundle['energy_sample'] = energy.tolist()
     bundle['magnetization_sample'] = magnetization.tolist()
     bundle['length of simulation'] = length

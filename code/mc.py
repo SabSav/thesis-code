@@ -28,6 +28,7 @@ def main(args):
     for _ in tqdm(range(args.burn_in), desc="Burn-in"):
         chain.advance()
 
+    chain.nFlip = 0
     # Collect samples
     for i in tqdm(range(args.length), desc="Simulation"):
         chain.advance()
@@ -37,6 +38,7 @@ def main(args):
             magnetization[index] = np.mean(chain.spins)
 
     bundle = chain.export_dict()
+    bundle['Number of flip'] = chain.nFlip
     bundle['energy_sample'] = energy.tolist()
     bundle['magnetization_sample'] = magnetization.tolist()
     bundle['initial_number_sample'] = args.length
@@ -78,6 +80,7 @@ def simulate(
     for _ in tqdm(range(burn_in), desc="Burn-in"): chain.advance()
 
     # Collect samples
+    chain.nFlip = 0
     for i in tqdm(range(length), desc="Simulation"):
         chain.advance()
         if i % frame_step == 0:
@@ -86,6 +89,7 @@ def simulate(
             magnetization[index] = np.mean(chain.spins)
 
     bundle = chain.export_dict()
+    bundle['Number of flip'] = chain.nFlip
     bundle['energy_sample'] = energy.tolist()
     bundle['magnetization_sample'] = magnetization.tolist()
     bundle['frame_step'] = frame_step

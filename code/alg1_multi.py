@@ -9,6 +9,7 @@ Usage: python code/mc.py -h
 import argparse
 import sys
 from itertools import repeat
+
 import numpy as np
 import tqdm
 import ising
@@ -23,12 +24,12 @@ def main(args):
         args: Parsed command-line arguments
     """
 
-    chain = ising.DynamicChain(size=args.size, temperature=args.temperature, coupling=args.coupling,
-                               field=args.field, action_rates=args.action_rates, dt=args.dt)
+    chain = ising.DynamicChain(size=args.size, temperature=args.temperature, field=args.field, coupling=args.coupling,
+                               action_rates=args.action_rates, dt=args.dt, seed=args.seed)
     np.random.seed(args.seed)
 
     # Skip the first burn_in samples so that the stationary distribution is reached
-    for _ in tqdm.tqdm(range(args.burn_in), desc="Alg1"): chain.advance()
+    for _ in tqdm.tqdm(range(args.burn_in), desc="MC"): chain.advance()
 
     energy = chain.energy()
     magnetization = np.mean(chain.spins)
@@ -37,11 +38,10 @@ def main(args):
 
 
 def simulate(
-        seed, size, temperature, field, coupling, burn_in,
-        action_rates, dt,
+        seed, size, temperature, field, coupling, action_rates, dt, burn_in
 ):
-    chain = ising.DynamicChain(size=size, temperature=temperature, coupling=coupling,
-                               field=field, action_rates=action_rates, dt=dt)
+    chain = ising.DynamicChain(size=size, temperature=temperature, field=field, coupling=coupling,
+                               action_rates=action_rates, dt=dt, seed=seed)
     np.random.seed(seed)
 
     # Skip the first burn_in samples so that the stationary distribution is reached
@@ -49,20 +49,23 @@ def simulate(
 
     energy = chain.energy()
     magnetization = np.mean(chain.spins)
+    return energy, magnetization, chain.spins
 
-    return energy, magnetization
 
-
-def merge(output, size=None, temperature=None, field=None, coupling=None, burn_in=None,
-          action_rates=None, dt=None):
+def merge(size, temperature, field, coupling, action_rates, dt, burn_in):
     np.random.seed(0)
-    seed = [np.random.randint(0, 2**32 - 1) for _ in range(10000)]
+    seed = [np.random.randint(0, 2 ** 32 - 1) for _ in range(10000)]
     with Pool(processes=128) as pool:
         simulation = pool.starmap(simulate, zip(seed, repeat(size), repeat(temperature), repeat(field),
-                                                          repeat(coupling), repeat(burn_in), repeat(action_rates),
-                                                          repeat(dt)))
-    engy, m = np.array([x for x in zip(*simulation)])
-    chain = ising.Metropolis(size=size, temperature=temperature, field=field, coupling=coupling)
+                                                repeat(coupling), repeat(action_rates), repeat(dt), repeat(burn_in)))
+    engy, m, spins = [x for x in zip(*simulation)]
+
+    return np.array(engy), np.array(m), np.array(spins)
+
+
+def write_file(output, size, temperature, field, coupling, action_rates, dt,  burn_in):
+    engy, m, spins = merge(size, temperature, field, coupling, action_rates, dt, burn_in)
+    chain = ising.Chain(size=size, temperature=temperature, field=field, coupling=coupling)
     bundle = chain.export_dict()
     bundle["energy_sample"] = engy.tolist()
     bundle["magnetization_sample"] = m.tolist()
@@ -109,4 +112,3 @@ if __name__ == '__main__':
     )
 
     main(parser.parse_args())
-

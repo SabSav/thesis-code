@@ -12,7 +12,7 @@ size = 10
 h = 0
 J = 1
 action_rates = np.array([
-    2 * [0.1 if i % 2 == 0 else 0.3]
+    2 * [0.5 if i % 2 == 0 else 0.7]
     for i in range(size)
 ])
 lT = 1.8
@@ -26,7 +26,7 @@ cases = [
      'output': f'{dir_path}/a1-response-alphas={action_rates[0,0]},{action_rates[1,0]}.json'},
     {'method': alg2, 'label': 'Response Alg2',
      'size': size, 'temperature': np.array([lT, hT]), 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': np.array([0.4, 0.4]),
+     'action_rates': action_rates, 'dt': np.array([1, 1]),
      'burn_in': 220, 'length': np.array([10, 50]), 'frame_step': np.array([1, 1]),
      'output': f'{dir_path}/a2-response-alphas={action_rates[0,0]},{action_rates[1,0]}.json'}
 ]

@@ -19,7 +19,7 @@ module purge
 source /g/erzberger/savino/miniconda3/etc/profile.d/conda.sh # NB!
 conda activate
 
-python examples/10_spins_response_alphas/run10response-alphas.py -i "[${SLURM_ARRAY_TASK_ID}]"
+python examples/10_spins_response/run10response-alphas.py -i "[${SLURM_ARRAY_TASK_ID}]"
 
 # Epilogue
 duration=$SECONDS
