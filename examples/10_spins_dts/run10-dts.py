@@ -6,10 +6,10 @@ import numpy as np
 # Add code directory to the python path
 sys.path.append('code')
 from alg1 import simulate as alg1
+from alg2 import simulate as alg2
 
 size = 10
-lT = 0.5
-hT = 2
+T = 2
 h = 0
 J = 1
 
@@ -19,23 +19,35 @@ action_rates = np.array([
 ])
 
 
-dt_lT = 1
-dt_hT = 5e-2
+dt_a = 0.1
+dt_b = 5e-2
+dt_c = 1e-4
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 cases = [
-
-    {'method': alg1, 'label': 'Low-temperature sample from an A1 simulation',
-     'size': size, 'temperature': lT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': dt_lT,
+    {'method': alg2, 'label': 'High-temperature sample from an A1 simulation',
+     'size': size, 'temperature': T, 'field': h, 'coupling': J,
+     'action_rates': action_rates, 'dt': 1,
      'burn_in': 10, 'length': 10000, 'frame_step': 1,
-     'output': f'{dir_path}/a1-lT-{dt_lT}.json'
+     'output': f'{dir_path}/a2-hT.json'
      },
     {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
-     'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': dt_hT,
-     'burn_in': 10, 'length': 10**6, 'frame_step': 10**2,
-     'output': f'{dir_path}/a1-hT-{dt_hT}.json'
+     'size': size, 'temperature': T, 'field': h, 'coupling': J,
+     'action_rates': action_rates, 'dt': dt_a,
+     'burn_in': 10, 'length': 100000, 'frame_step': 10,
+     'output': f'{dir_path}/a1-hT-{dt_a}.json'
+     },
+    {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
+     'size': size, 'temperature': T, 'field': h, 'coupling': J,
+     'action_rates': action_rates, 'dt': dt_b,
+     'burn_in': 10, 'length': 200000, 'frame_step': 20,
+     'output': f'{dir_path}/a1-hT-{dt_b}.json'
+     },
+    {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
+     'size': size, 'temperature': T, 'field': h, 'coupling': J,
+     'action_rates': action_rates, 'dt': dt_c,
+     'burn_in': 10, 'length': 10**8, 'frame_step': 10**4,
+     'output': f'{dir_path}/a1-hT-{dt_c}.json'
      }
 ]
 
@@ -54,4 +66,3 @@ if __name__ == '__main__':
         print(kwargs.pop('label'))
         method(**kwargs)
         print()
-

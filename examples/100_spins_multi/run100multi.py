@@ -24,7 +24,7 @@ action_rates = np.array([
 ])
 
 dt_lT = 0.1
-dt_hT = 1e-4
+dt_hT = 0.1
 
 cases = [
     {'method': mc, 'label': 'Low-temperature sample from an MC simulation',
@@ -39,7 +39,7 @@ cases = [
      'output': f'{dir_path}/a1-lT.json'},
     {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': 1e-4, 'burn_in': 1700000,
+     'action_rates': action_rates, 'dt': 0.1, 'burn_in': 1100,
      'output': f'{dir_path}/a1-hT.json'},
     {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,
@@ -47,7 +47,7 @@ cases = [
      'output': f'{dir_path}/a2-lT.json'},
     {'method': alg2, 'label': 'High-temperature sample from an A1 simulation',
      'size': size, 'temperature': hT, 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': 1.0, 'burn_in': 162,
+     'action_rates': action_rates, 'dt': 1.0, 'burn_in': 110,
      'output': f'{dir_path}/a2-hT.json'}
 
 ]

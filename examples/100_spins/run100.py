@@ -21,7 +21,7 @@ action_rates = np.array([
 ])
 
 dt_lT = 0.1
-dt_hT = 1e-4
+dt_hT = 0.1
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -43,7 +43,7 @@ cases = [
     {'method': alg1, 'label': 'High-temperature sample from an A1 simulation',
         'size': size, 'temperature': hT, 'field': h, 'coupling': J,
         'action_rates': action_rates, 'dt': dt_hT,
-        'burn_in': 10, 'length': 10**8, 'frame_step': 10**4,
+        'burn_in': 10, 'length': 10**5, 'frame_step': 10,
         'output': f'{dir_path}/a1-hT.json'},
     {'method': alg2, 'label': 'Low-temperature sample from an A2 simulation',
      'size': size, 'temperature': lT, 'field': h, 'coupling': J,

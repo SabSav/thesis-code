@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -p htc-el8 # partiion
 #SBATCH -J ising # Job name
-#SBATCH -a 0-1 #Job array
+#SBATCH -a 0-8 #Job array
 #SBATCH -N 1 # Number of nodes
 #SBATCH -n 128 # Number of cpus in node
 #SBATCH --mem 8G

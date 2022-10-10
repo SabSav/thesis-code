@@ -12,7 +12,15 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 size = 100
 h = 0
 J = 1
-action_rates = np.array([
+action_rates0 = np.array([
+    2 * [0.05 if i % 2 == 0 else 0.08]
+    for i in range(size)
+])
+action_rates1 = np.array([
+    2 * [0.1 if i % 2 == 0 else 0.3]
+    for i in range(size)
+])
+action_rates2 = np.array([
     2 * [0.5 if i % 2 == 0 else 0.7]
     for i in range(size)
 ])
@@ -26,14 +34,34 @@ cases = [
      'output': f'{dir_path}/mc-response.json'},
     {'method': alg1, 'label': 'Response Alg1',
      'size': size, 'temperature': np.array([lT, hT]), 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': np.array([1e-3, 1e-3]),
-     'burn_in': 170000, 'length': np.array([10**4, 5*10**4]), 'frame_step': np.array([10**3, 10**3]),
-     'output': f'{dir_path}/a1-response-alphas={action_rates[0,0]},{action_rates[1,0]}.json'},
+     'action_rates': action_rates0, 'dt': np.array([0.1, 0.1]),
+     'burn_in': 1100, 'length': np.array([100, 500]), 'frame_step': np.array([10, 10]),
+     'output': f'{dir_path}/a1-response-alphas={action_rates0[0,0]},{action_rates0[1,0]}.json'},
     {'method': alg2, 'label': 'Response Alg2',
      'size': size, 'temperature': np.array([lT, hT]), 'field': h, 'coupling': J,
-     'action_rates': action_rates, 'dt': np.array([1, 1]),
-     'burn_in': 162, 'length': np.array([10, 50]), 'frame_step': np.array([1, 1]),
-     'output': f'{dir_path}/a2-response-alphas={action_rates[0,0]},{action_rates[1,0]}.json'}
+     'action_rates': action_rates0, 'dt': np.array([1, 1]),
+     'burn_in': 110, 'length': np.array([10, 50]), 'frame_step': np.array([1, 1]),
+     'output': f'{dir_path}/a2-response-alphas={action_rates0[0,0]},{action_rates0[1,0]}.json'},
+    {'method': alg1, 'label': 'Response Alg1',
+     'size': size, 'temperature': np.array([lT, hT]), 'field': h, 'coupling': J,
+     'action_rates': action_rates1, 'dt': np.array([0.1, 0.1]),
+     'burn_in': 1100, 'length': np.array([100, 500]), 'frame_step': np.array([10, 10]),
+     'output': f'{dir_path}/a1-response-alphas={action_rates1[0,0]},{action_rates1[1,0]}.json'},
+    {'method': alg2, 'label': 'Response Alg2',
+     'size': size, 'temperature': np.array([lT, hT]), 'field': h, 'coupling': J,
+     'action_rates': action_rates1, 'dt': np.array([1, 1]),
+     'burn_in': 110, 'length': np.array([10, 50]), 'frame_step': np.array([1, 1]),
+     'output': f'{dir_path}/a2-response-alphas={action_rates1[0,0]},{action_rates1[1,0]}.json'},
+    {'method': alg1, 'label': 'Response Alg1',
+     'size': size, 'temperature': np.array([lT, hT]), 'field': h, 'coupling': J,
+     'action_rates': action_rates2, 'dt': np.array([0.1, 0.1]),
+     'burn_in': 1100, 'length': np.array([100, 500]), 'frame_step': np.array([10, 10]),
+     'output': f'{dir_path}/a1-response-alphas={action_rates2[0,0]},{action_rates2[1,0]}.json'},
+    {'method': alg2, 'label': 'Response Alg2',
+     'size': size, 'temperature': np.array([lT, hT]), 'field': h, 'coupling': J,
+     'action_rates': action_rates2, 'dt': np.array([1, 1]),
+     'burn_in': 110, 'length': np.array([10, 50]), 'frame_step': np.array([1, 1]),
+     'output': f'{dir_path}/a2-response-alphas={action_rates2[0,0]},{action_rates2[1,0]}.json'},
 ]
 
 if __name__ == '__main__':
